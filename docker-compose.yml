@@ -1,4 +1,4 @@
-name: queen-style
+name: erpqueen
 
 services:
   postgres:
