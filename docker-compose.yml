@@ -8,8 +8,10 @@ services:
       POSTGRES_DB: queen_style_db
       POSTGRES_USER: queen_user
       POSTGRES_PASSWORD: queen_password
-    ports:
-      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    # Postgres NO se publica al host a proposito:
+    # evita choques con otro Postgres (Dokploy/Traefik/local) y no exponer
+    # la BD en 0.0.0.0. La API la usa por la red interna (servicio `postgres`).
+    # Para exponerla en local: docker compose -f docker-compose.yml -f docker-compose.db-port.yml up -d
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -52,8 +54,9 @@ services:
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
     ports:
-      # En Dokploy/Traefik: define WEB_PORT=8080 (u otro) para chocar con Traefik (80/443)
-      - "${WEB_PORT:-80}:80"
+      # 8080 por defecto: en Dokploy/Traefik el 80/443 esta tomado.
+      # Cambia con WEB_PORT si 8080 tambien esta ocupado.
+      - "${WEB_PORT:-8080}:80"
     depends_on:
       - api
 

@@ -1,0 +1,10 @@
+# Opcional: expone Postgres al host (psql / DBeaver / prisma studio) en local.
+# No usar en Dokploy ni en servidores publicos.
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.db-port.yml up -d
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
