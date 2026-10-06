@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: queen_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: queen_style_db
+      POSTGRES_USER: queen_user
+      POSTGRES_PASSWORD: queen_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U queen_user -d queen_style_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: queen_api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATA_MODE: ${DATA_MODE:-prisma}
+      DATABASE_URL: postgresql://queen_user:queen_password@postgres:5432/queen_style_db?schema=public
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-queen_style_dev_access_secret_change_me_0123456789}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-queen_style_dev_refresh_secret_change_me_0123456789}
+      JWT_ACCESS_EXPIRES_IN: ${JWT_ACCESS_EXPIRES_IN:-15m}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      API_URL: ${API_URL:-http://localhost}
+      WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:-584120000000}
+      THROTTLE_TTL: ${THROTTLE_TTL:-60000}
+      THROTTLE_LIMIT: ${THROTTLE_LIMIT:-100}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS:-12}
+      STORAGE_PROVIDER: local
+    expose:
+      - "3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - api_uploads:/repo/apps/api/uploads
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: queen_web
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  api_uploads:

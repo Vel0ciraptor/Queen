@@ -1,0 +1,416 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// USERS & AUTH
+// ─────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  PROMOTORA
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(PROMOTORA)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales         Sale[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+// ─────────────────────────────────────────
+// CATEGORIES
+// ─────────────────────────────────────────
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products Product[]
+
+  @@map("categories")
+}
+
+// ─────────────────────────────────────────
+// PRODUCTS
+// ─────────────────────────────────────────
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  sku         String        @unique
+  name        String
+  description String?
+  categoryId  String
+  costPrice   Decimal       @db.Decimal(10, 2)
+  salePrice   Decimal       @db.Decimal(10, 2)
+  stockMin    Int           @default(0)
+  stockMax    Int?
+  status      ProductStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  category   Category       @relation(fields: [categoryId], references: [id])
+  images     ProductImage[]
+  inventory  Inventory?
+  qrCode     QRCode?
+  saleItems  SaleItem[]
+  orderItems OrderItem[]
+
+  @@index([sku])
+  @@index([categoryId])
+  @@index([status])
+  @@map("products")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  productId String
+  url       String
+  altText   String?
+  isPrimary Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+// ─────────────────────────────────────────
+// INVENTORY
+// ─────────────────────────────────────────
+
+model Inventory {
+  id        String   @id @default(uuid())
+  productId String   @unique
+  stock     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  product   Product             @relation(fields: [productId], references: [id])
+  movements InventoryMovement[]
+
+  @@index([productId])
+  @@map("inventory")
+}
+
+enum MovementType {
+  PURCHASE
+  SALE
+  RETURN
+  LOSS
+  DAMAGE
+  ADJUSTMENT
+}
+
+model InventoryMovement {
+  id          String       @id @default(uuid())
+  inventoryId String
+  type        MovementType
+  quantity    Int
+  reference   String?
+  notes       String?
+  createdBy   String?
+  createdAt   DateTime     @default(now())
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id])
+
+  @@index([inventoryId])
+  @@index([createdAt])
+  @@index([type])
+  @@map("inventory_movements")
+}
+
+// ─────────────────────────────────────────
+// QR CODES
+// ─────────────────────────────────────────
+
+model QRCode {
+  id        String   @id @default(uuid())
+  productId String   @unique
+  code      String   @unique
+  imageUrl  String?
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("qr_codes")
+}
+
+// ─────────────────────────────────────────
+// CUSTOMERS
+// ─────────────────────────────────────────
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?  @unique
+  email     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+  sales  Sale[]
+
+  @@index([phone])
+  @@map("customers")
+}
+
+// ─────────────────────────────────────────
+// SALES (ventas físicas)
+// ─────────────────────────────────────────
+
+enum SaleStatus {
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  QR
+  TRANSFERENCIA
+  TARJETA
+  OTRO
+}
+
+model Sale {
+  id            String        @id @default(uuid())
+  userId        String
+  customerId    String?
+  status        SaleStatus    @default(COMPLETED)
+  subtotal      Decimal       @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+  discount      Decimal       @default(0) @db.Decimal(10, 2)
+  paymentMethod PaymentMethod
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+  items    SaleItem[]
+  payments Payment[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([status])
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String  @id @default(uuid())
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  unitCost  Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("sale_items")
+}
+
+// ─────────────────────────────────────────
+// ORDERS (pedidos online)
+// ─────────────────────────────────────────
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+model Order {
+  id           String      @id @default(uuid())
+  customerId   String?
+  status       OrderStatus @default(PENDING)
+  subtotal     Decimal     @db.Decimal(10, 2)
+  deliveryFee  Decimal     @default(0) @db.Decimal(10, 2)
+  total        Decimal     @db.Decimal(10, 2)
+  address      String?
+  notes        String?
+  whatsappSent Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  customer Customer?   @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+  payments Payment[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// ─────────────────────────────────────────
+// PAYMENTS
+// ─────────────────────────────────────────
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id        String        @id @default(uuid())
+  saleId    String?
+  orderId   String?
+  method    PaymentMethod
+  amount    Decimal       @db.Decimal(10, 2)
+  status    PaymentStatus @default(COMPLETED)
+  reference String?
+  createdAt DateTime      @default(now())
+
+  sale  Sale?  @relation(fields: [saleId], references: [id])
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@index([saleId])
+  @@index([orderId])
+  @@map("payments")
+}
+
+// ─────────────────────────────────────────
+// FINANCIAL TRANSACTIONS
+// ─────────────────────────────────────────
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model FinancialTransaction {
+  id          String          @id @default(uuid())
+  type        TransactionType
+  amount      Decimal         @db.Decimal(10, 2)
+  description String
+  category    String?
+  reference   String?
+  date        DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+
+  @@index([type])
+  @@index([date])
+  @@map("financial_transactions")
+}
+
+// ─────────────────────────────────────────
+// AUDIT LOGS
+// ─────────────────────────────────────────
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────
+// NOTIFICATIONS
+// ─────────────────────────────────────────
+
+enum NotificationType {
+  NEW_ORDER
+  LOW_STOCK
+  OUT_OF_STOCK
+  SALE_COMPLETED
+  ORDER_CANCELLED
+  WEEKLY_REPORT
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+// ─────────────────────────────────────────
+// SETTINGS
+// ─────────────────────────────────────────
+
+model Setting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}

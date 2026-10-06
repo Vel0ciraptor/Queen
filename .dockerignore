@@ -1,0 +1,19 @@
+# Build context = raíz del monorepo
+node_modules
+**/node_modules
+**/dist
+.git
+.gitignore
+
+# Secrets / entorno
+.env
+**/.env
+
+# Logs y temporales
+*.log
+**/*.log
+apps/api/tsconfig.build.tsbuildinfo
+
+# Artefactos locales
+apps/api/uploads
+.DS_Store
