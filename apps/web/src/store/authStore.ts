@@ -16,15 +16,40 @@ interface AuthState {
   logout: () => void;
 }
 
-const savedUser = localStorage.getItem('queen_user');
-const savedToken = localStorage.getItem('queen_access_token');
+const initialToken = readToken();
+
+function readUser(): User | null {
+  const raw = localStorage.getItem('queen_user');
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !parsed.id) {
+      localStorage.removeItem('queen_user');
+      return null;
+    }
+    return parsed as User;
+  } catch {
+    localStorage.removeItem('queen_user');
+    return null;
+  }
+}
+
+function readToken(): string | null {
+  const raw = localStorage.getItem('queen_access_token');
+  if (!raw || raw === 'undefined' || raw === 'null') {
+    if (raw) localStorage.removeItem('queen_access_token');
+    return null;
+  }
+  return raw;
+}
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: savedUser ? JSON.parse(savedUser) : null,
-  token: savedToken || null,
-  isAuthenticated: !!savedToken,
+  user: readUser(),
+  token: initialToken,
+  isAuthenticated: !!initialToken,
 
   login: (user: User, token: string) => {
+    if (!user?.id || !token || token === 'undefined') return;
     localStorage.setItem('queen_user', JSON.stringify(user));
     localStorage.setItem('queen_access_token', token);
     set({ user, token, isAuthenticated: true });

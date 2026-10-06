@@ -24,7 +24,8 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const res = await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true });
-        const newToken = res.data.accessToken;
+        const newToken = res.data?.data?.accessToken ?? res.data?.accessToken;
+        if (!newToken || newToken === 'undefined') throw new Error('Refresh sin token');
         localStorage.setItem('queen_access_token', newToken);
         originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);

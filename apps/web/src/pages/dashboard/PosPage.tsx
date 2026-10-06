@@ -629,13 +629,17 @@ export const PosPage: React.FC = () => {
         icon={<CheckCircle2 className="w-5 h-5 text-emerald-400" />}
       >
         <div className="text-center space-y-3 py-2">
-          <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <p className="text-sm text-slate-300">
-            Factura <span className="font-mono text-white">#{String(lastSale.id).slice(0, 8)}</span> por{' '}
-            <span className="font-bold text-white">{currency(lastSale.total)}</span>
-          </p>
+          {lastSale && (
+            <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8" />
+            </div>
+          )}
+          {lastSale && (
+            <p className="text-sm text-slate-300">
+              Factura <span className="font-mono text-white">#{String(lastSale.id).slice(0, 8)}</span> por{' '}
+              <span className="font-bold text-white">{currency(lastSale.total)}</span>
+            </p>
+          )}
           <p className="text-xs text-slate-500">
             El inventario y el registro financiero se actualizaron automáticamente.
           </p>

@@ -25,7 +25,12 @@ export const LoginPage: React.FC = () => {
 
     try {
       const res = await api.post('/auth/login', { email, password });
-      const { user, accessToken } = res.data;
+      const payload = res.data?.data ?? res.data ?? {};
+      const { user, accessToken } = payload;
+      if (!accessToken || !user) {
+        setError('Respuesta inválida del servidor. Intenta de nuevo.');
+        return;
+      }
       login(user, accessToken);
       navigate(from, { replace: true });
     } catch (err: any) {
