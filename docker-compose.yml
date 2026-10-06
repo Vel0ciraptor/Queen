@@ -1,14 +1,15 @@
+name: queen-style
+
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: queen_postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: queen_style_db
       POSTGRES_USER: queen_user
       POSTGRES_PASSWORD: queen_password
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,7 +22,6 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
-    container_name: queen_api
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -50,10 +50,9 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
-    container_name: queen_web
     restart: unless-stopped
     ports:
-      - "80:80"
+      - "${WEB_PORT:-80}:80"
     depends_on:
       - api
 
