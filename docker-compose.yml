@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: queen_user
       POSTGRES_PASSWORD: queen_password
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -52,6 +52,7 @@ services:
       dockerfile: apps/web/Dockerfile
     restart: unless-stopped
     ports:
+      # En Dokploy/Traefik: define WEB_PORT=8080 (u otro) para chocar con Traefik (80/443)
       - "${WEB_PORT:-80}:80"
     depends_on:
       - api

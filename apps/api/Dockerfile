@@ -27,8 +27,9 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/shared/package.json packages/shared/package.json
-# dev deps incluidos para poder ejecutar `prisma migrate deploy` y el seed
-RUN npm ci
+# --include=dev: NODE_ENV=production haria que npm omita devDeps,
+# pero aqui necesitamos `prisma` (CLI), `ts-node` y `typescript` para migrar y sembrar
+RUN npm ci --include=dev
 
 COPY --from=build /repo/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /repo/node_modules/@prisma/client ./node_modules/@prisma/client
@@ -40,4 +41,4 @@ WORKDIR /repo/apps/api
 RUN mkdir -p uploads/products
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy --schema prisma/schema.prisma && node dist/main.js"]
+CMD ["sh", "-c", "set -e; npx prisma migrate deploy --schema prisma/schema.prisma; npx prisma db seed || echo '[seed] omitido'; exec node dist/main.js"]
