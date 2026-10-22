@@ -359,9 +359,121 @@
   }
 }
 
+/* Product label (barcode) — dims in mm for print fidelity */
+#qs-print-root {
+  display: none;
+}
+
+body.qs-printing #qs-print-root {
+  display: block;
+}
+
+@media print {
+  /* Ocultar toda la app y mostrar solo las etiquetas */
+  body.qs-printing > *:not(#qs-print-root) {
+    display: none !important;
+  }
+
+  body.qs-printing {
+    background: #ffffff !important;
+  }
+
+  #qs-print-root {
+    display: block !important;
+    background: #ffffff !important;
+  }
+
+  .qs-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: Arial, Helvetica, sans-serif;
+    border: 0.4mm dashed #bbb !important;
+    overflow: hidden;
+    gap: 0.6mm;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .qs-label .qs-label-name {
+    font-size: 9pt;
+    font-weight: 700;
+    line-height: 1.05;
+    max-height: 40%;
+    overflow: hidden;
+    padding: 0 0.5mm;
+  }
+
+  .qs-label .qs-label-price {
+    font-size: 12pt;
+    font-weight: 800;
+  }
+
+  .qs-label .qs-label-barcode {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .qs-label .qs-label-barcode svg {
+    width: 96%;
+    height: auto;
+  }
+
+  .qs-label .qs-label-sku {
+    font-family: monospace;
+    font-size: 7.5pt;
+    letter-spacing: 0.2px;
+  }
+}
+
+.product-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: #ffffff;
+  color: #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  border: 1px dashed #bbb;
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 0.6mm;
+  flex: none;
+}
+
+.product-label .pl-name {
+  font-size: 9pt;
+  font-weight: 700;
+  line-height: 1.05;
+  max-height: 40%;
+  overflow: hidden;
+  padding: 0 0.5mm;
+}
+
+.product-label .pl-price {
+  font-size: 12pt;
+  font-weight: 800;
+}
+
+.product-label .pl-barcode {
+  width: 96%;
+  height: auto;
+}
+
+.product-label .pl-sku {
+  font-family: monospace;
+  font-size: 7.5pt;
+  letter-spacing: 0.2px;
+}
+
 /* Animations */
-@keyframes fadeIn {
-  from {
+@keyframes fadeIn {  from {
     opacity: 0;
   }
   to {

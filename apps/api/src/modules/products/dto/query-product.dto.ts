@@ -14,6 +14,21 @@ export class QueryProductDto {
   @IsString()
   categoryId?: string;
 
+  @ApiPropertyOptional({ description: 'Filtrar por material' })
+  @IsOptional()
+  @IsString()
+  materialId?: string;
+
+  @ApiPropertyOptional({ description: 'Filtrar por color' })
+  @IsOptional()
+  @IsString()
+  colorId?: string;
+
+  @ApiPropertyOptional({ description: 'Filtrar por forma' })
+  @IsOptional()
+  @IsString()
+  shapeId?: string;
+
   @ApiPropertyOptional({ enum: ProductStatus })
   @IsOptional()
   @IsEnum(ProductStatus)

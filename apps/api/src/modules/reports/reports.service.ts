@@ -102,6 +102,62 @@ export class ReportsService {
     }));
   }
 
+  /**
+   * Producto más vendido de la semana (últimos 7 días),
+   * considerando solo ventas completadas.
+   */
+  async getWeeklyBestSeller() {
+    const periodEnd = new Date();
+    const periodStart = new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const items = await this.prisma.saleItem.findMany({
+      where: {
+        sale: {
+          createdAt: { gte: periodStart },
+          status: SaleStatus.COMPLETED,
+        },
+      },
+      include: {
+        product: {
+          include: { images: true, category: true, inventory: true },
+        },
+      },
+    });
+
+    const totals = new Map<string, { quantity: number; revenue: number }>();
+    const productById = new Map<string, any>();
+    for (const item of items) {
+      const acc = totals.get(item.productId) ?? { quantity: 0, revenue: 0 };
+      acc.quantity += item.quantity;
+      acc.revenue += Number(item.subtotal || 0);
+      totals.set(item.productId, acc);
+      productById.set(item.productId, item.product);
+    }
+
+    let bestId: string | null = null;
+    for (const [productId, acc] of totals) {
+      if (!productById.get(productId)) continue;
+      if (!bestId) {
+        bestId = productId;
+        continue;
+      }
+      const best = totals.get(bestId)!;
+      if (acc.quantity > best.quantity || (acc.quantity === best.quantity && acc.revenue > best.revenue)) {
+        bestId = productId;
+      }
+    }
+
+    const bestAcc = bestId ? totals.get(bestId)! : null;
+
+    return {
+      periodStart,
+      periodEnd,
+      product: bestId ? productById.get(bestId) : null,
+      quantitySold: bestAcc?.quantity ?? 0,
+      revenue: bestAcc?.revenue ?? 0,
+    };
+  }
+
   async getSalesByPaymentMethod() {
     const sales = await this.prisma.sale.groupBy({
       by: ['paymentMethod'],

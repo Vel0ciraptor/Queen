@@ -14,7 +14,7 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = (location.state as any)?.from?.pathname || '/dashboard/pos';
+  const from = (location.state as any)?.from?.pathname || '/dashboard/sales';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +58,7 @@ export const LoginPage: React.FC = () => {
           },
           'mock-jwt-promotora-token'
         );
-        navigate('/dashboard/pos', { replace: true });
+        navigate('/dashboard/sales', { replace: true });
       } else {
         setError('Credenciales inválidas. Verifica tu correo y contraseña.');
       }

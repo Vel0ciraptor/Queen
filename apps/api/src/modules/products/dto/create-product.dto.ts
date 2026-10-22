@@ -12,10 +12,14 @@ import { Type } from 'class-transformer';
 import { ProductStatus } from '@prisma/client';
 
 export class CreateProductDto {
-  @ApiProperty({ example: 'SKU-VEST-001' })
+  @ApiPropertyOptional({
+    example: 'ANI-ORO-DOR-00001',
+    description:
+      'SKU auto-generado a partir de tipo, material, color y forma + secuencia de 5 dígitos. Si no se envía, se genera en el servidor.',
+  })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'SKU es requerido' })
-  sku: string;
+  sku?: string;
 
   @ApiProperty({ example: 'Vestido de Gala Escarlata' })
   @IsString()
@@ -27,10 +31,28 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
-  @ApiProperty({ example: 'uuid-de-categoria' })
+  @ApiProperty({ example: 'uuid-de-tipo-de-joya' })
   @IsString()
-  @IsNotEmpty({ message: 'La categoría es requerida' })
+  @IsNotEmpty({ message: 'El tipo de joya es requerido' })
   categoryId: string;
+
+  @ApiProperty({ example: 'uuid-de-material', description: 'Material (requerido)' })
+  @IsString()
+  @IsNotEmpty({ message: 'El material es requerido' })
+  materialId: string;
+
+  @ApiProperty({ example: 'uuid-de-color', description: 'Color (requerido)' })
+  @IsString()
+  @IsNotEmpty({ message: 'El color es requerido' })
+  colorId: string;
+
+  @ApiPropertyOptional({
+    example: 'uuid-de-forma',
+    description: 'Forma (opcional)',
+  })
+  @IsOptional()
+  @IsString()
+  shapeId?: string;
 
   @ApiProperty({ example: 45.0 })
   @Type(() => Number)

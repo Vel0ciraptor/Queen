@@ -16,11 +16,11 @@ import { toast } from '../components/ui/Toast';
 import { currency, shortDate } from '../lib/format';
 
 const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Pendiente de confirmación',
-  CONFIRMED: 'Confirmado',
+  PENDING: 'Recibido — pendiente de confirmación',
+  CONFIRMED: 'Aceptado — en preparación',
   PREPARING: 'En preparación',
   READY: 'Listo para entrega',
-  DELIVERED: 'Entregado',
+  DELIVERED: 'Venta realizada — entregado',
   CANCELLED: 'Cancelado',
 };
 
@@ -186,7 +186,11 @@ export const OrderConfirmationPage: React.FC = () => {
             </div>
             <div className="text-xs text-slate-400 flex items-start gap-1.5">
               <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-              <span>{address || 'Retiro en boutique / a coordinar'}</span>
+              <span>
+                {order.fulfillmentType === 'DELIVERY'
+                  ? address || 'Delivery — dirección a coordinar'
+                  : 'Retiro en tienda'}
+              </span>
             </div>
             {order.notes && (
               <div className="text-xs text-slate-500 mt-1.5">Nota: {order.notes}</div>

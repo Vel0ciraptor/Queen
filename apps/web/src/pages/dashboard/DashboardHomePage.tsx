@@ -8,6 +8,11 @@ import {
   Users,
   ArrowRight,
   AlertTriangle,
+  Warehouse,
+  Store,
+  Globe,
+  Radio,
+  Trophy,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -21,27 +26,46 @@ import {
 import api from '../../lib/api';
 import { PageLoader } from '../../components/ui/Feedback';
 import { getApiErrorMessage } from '../../lib/errors';
-import { currency, dateTime } from '../../lib/format';
+import { currency, dateTime, shortDate } from '../../lib/format';
+import { movementLocationText } from '../../lib/inventory';
 import { toast } from '../../components/ui/Toast';
+import { useAuthStore } from '../../store/authStore';
+
+const LOCATION_ICONS: Record<string, React.ReactNode> = {
+  BODEGA: <Warehouse className="w-3.5 h-3.5" />,
+  TIENDA: <Store className="w-3.5 h-3.5" />,
+  ONLINE: <Globe className="w-3.5 h-3.5" />,
+  LIVE: <Radio className="w-3.5 h-3.5" />,
+};
 
 export const DashboardHomePage: React.FC = () => {
+  const role = useAuthStore((s) => s.user?.role);
+  const isAdmin = role === 'ADMIN';
+
   const [kpis, setKpis] = useState<any>(null);
   const [alerts, setAlerts] = useState<any[]>([]);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
   const [trend, setTrend] = useState<any[]>([]);
+  const [inventory, setInventory] = useState<any>(null);
+  const [weeklyBest, setWeeklyBest] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const [k, a, o, t, m] = await Promise.allSettled([
+        const [k, a, o, t, m, inv, w] = await Promise.allSettled([
           api.get('/reports/kpis'),
           api.get('/inventory/alerts'),
-          api.get('/orders', { params: { status: 'PENDING', limit: 5 } }),
+          // Los pedidos web solo los ve el rol ADMIN
+          isAdmin
+            ? api.get('/orders', { params: { status: 'PENDING', limit: 5 } })
+            : Promise.resolve({ data: { items: [] } }),
           api.get('/reports/top-products', { params: { limit: 5 } }),
           api.get('/finance/monthly-trend'),
+          api.get('/inventory/overview'),
+          api.get('/reports/best-seller-weekly'),
         ]);
 
         if (k.status === 'fulfilled') setKpis(k.value.data);
@@ -49,6 +73,8 @@ export const DashboardHomePage: React.FC = () => {
         if (o.status === 'fulfilled') setPendingOrders(o.value.data.items ?? []);
         if (t.status === 'fulfilled') setTopProducts(t.value.data ?? []);
         if (m.status === 'fulfilled') setTrend(m.value.data.months ?? []);
+        if (inv.status === 'fulfilled') setInventory(inv.value.data);
+        if (w.status === 'fulfilled') setWeeklyBest(w.value.data);
 
         if (k.status === 'rejected') {
           toast.error(getApiErrorMessage(k.reason, 'No se pudieron cargar los KPIs'));
@@ -93,7 +119,7 @@ export const DashboardHomePage: React.FC = () => {
       sub: `${kpis?.totalCustomers ?? 0} clientes`,
       icon: ListOrdered,
       tone: 'text-sky-400',
-      to: '/dashboard/orders',
+      to: '/dashboard/sales?tab=orders',
     },
   ];
 
@@ -123,6 +149,124 @@ export const DashboardHomePage: React.FC = () => {
             </div>
           </Link>
         ))}
+      </div>
+
+      {/* Inventario por ubicación + más vendido de la semana */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 glass-card rounded-2xl border border-white/[0.06] p-5">
+          <div className="flex items-center justify-between mb-4 gap-2">
+            <div>
+              <h3 className="text-sm font-serif font-bold text-white">Inventario por ubicación</h3>
+              <p className="text-[11px] text-slate-500">
+                Inventario general y a dónde se distribuyen los productos ingresados
+              </p>
+            </div>
+            <Link
+              to="/dashboard/inventory"
+              className="text-xs text-[#E0A96D] hover:underline flex items-center gap-1 shrink-0"
+            >
+              Ver inventario <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {(inventory?.locations ?? []).map((loc: any) => (
+              <div
+                key={loc.location}
+                className="rounded-xl bg-white/[0.04] border border-white/[0.07] p-3.5"
+              >
+                <div className="flex items-center gap-1.5 text-slate-500">
+                  <span className="text-[#E0A96D]">{LOCATION_ICONS[loc.location]}</span>
+                  <span className="text-[10px] uppercase tracking-wider font-semibold truncate">
+                    {loc.label}
+                  </span>
+                </div>
+                <div className="text-xl font-bold font-serif text-white mt-1">{loc.units}</div>
+                <div className="text-[10px] text-slate-500">
+                  {loc.products} producto{loc.products === 1 ? '' : 's'}
+                </div>
+              </div>
+            ))}
+            {(inventory?.locations ?? []).length === 0 && (
+              <div className="col-span-full py-4 text-center text-xs text-slate-500">
+                Sin datos de inventario.
+              </div>
+            )}
+          </div>
+
+          {(inventory?.recentTransfers ?? []).length > 0 && (
+            <div className="mt-4 pt-4 border-t border-white/[0.06]">
+              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold mb-2">
+                Últimos traspasos
+              </div>
+              <div className="space-y-1.5">
+                {inventory.recentTransfers.slice(0, 4).map((tr: any) => (
+                  <div key={tr.id} className="flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-300 truncate">
+                      {tr.inventory?.product?.name || 'Producto'}
+                      <span className="text-slate-500"> · {shortDate(tr.createdAt)}</span>
+                    </span>
+                    <span className="text-[#E0A96D] shrink-0 font-semibold">
+                      {movementLocationText(tr)} · {tr.quantity} uds
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Más vendido de la semana */}
+        <div className="glass-card rounded-2xl border border-white/[0.06] overflow-hidden">
+          <div className="px-5 py-4 border-b border-white/[0.06] flex items-center gap-2">
+            <Trophy className="w-4 h-4 text-[#E0A96D]" />
+            <h3 className="text-sm font-serif font-bold text-white">Más vendido · 7 días</h3>
+          </div>
+          {weeklyBest?.product ? (
+            <div className="p-5">
+              <div className="flex items-center gap-3">
+                <img
+                  src={weeklyBest.product.images?.[0]?.url || '/placeholder-product.png'}
+                  alt=""
+                  className="w-14 h-16 rounded-lg object-cover bg-white/5 shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-white truncate">
+                    {weeklyBest.product.name}
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-mono">
+                    {weeklyBest.product.sku}
+                  </div>
+                  <div className="mt-1.5">
+                    <span className="badge badge-gold">{weeklyBest.quantitySold} unidades</span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-white/[0.04] border border-white/[0.07] p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                    Ingresos
+                  </div>
+                  <div className="text-lg font-bold text-[#E0A96D] font-serif mt-0.5">
+                    {currency(weeklyBest.revenue)}
+                  </div>
+                </div>
+                <div className="rounded-xl bg-white/[0.04] border border-white/[0.07] p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                    Período
+                  </div>
+                  <div className="text-[11px] text-slate-300 mt-1.5">
+                    {shortDate(weeklyBest.periodStart)} — {shortDate(weeklyBest.periodEnd)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="py-10 text-center text-xs text-slate-500">
+              Sin ventas registradas en los últimos 7 días.
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -241,14 +385,15 @@ export const DashboardHomePage: React.FC = () => {
           )}
         </div>
 
-        {/* Pending orders */}
+        {/* Pending orders (solo ADMIN) */}
+        {isAdmin && (
         <div className="glass-card rounded-2xl border border-white/[0.06] overflow-hidden">
           <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ListOrdered className="w-4 h-4 text-sky-400" />
               <h3 className="text-sm font-serif font-bold text-white">Pedidos por confirmar</h3>
             </div>
-            <Link to="/dashboard/orders" className="text-xs text-[#E0A96D] hover:underline">
+            <Link to="/dashboard/sales?tab=orders" className="text-xs text-[#E0A96D] hover:underline">
               Ver pedidos
             </Link>
           </div>
@@ -271,6 +416,7 @@ export const DashboardHomePage: React.FC = () => {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Quick actions */}
@@ -281,10 +427,10 @@ export const DashboardHomePage: React.FC = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           {[
-            { to: '/dashboard/pos', label: 'Nueva venta' },
+            { to: '/dashboard/sales', label: 'Nueva venta' },
             { to: '/dashboard/products', label: 'Gestionar productos' },
             { to: '/dashboard/qr', label: 'Generar etiquetas QR' },
-            { to: '/dashboard/orders', label: 'Ver pedidos web' },
+            ...(isAdmin ? [{ to: '/dashboard/sales?tab=orders', label: 'Ver pedidos web' }] : []),
             { to: '/dashboard/reports', label: 'Reportes & KPIs' },
           ].map((q) => (
             <Link

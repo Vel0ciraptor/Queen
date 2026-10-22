@@ -42,16 +42,36 @@ model User {
 // CATEGORIES
 // ─────────────────────────────────────────
 
+enum CategoryDimension {
+  TYPE
+  MATERIAL
+  COLOR
+  SHAPE
+}
+
 model Category {
-  id          String   @id @default(uuid())
-  name        String   @unique
+  id          String             @id @default(uuid())
+  name        String
+  dimension   CategoryDimension  @default(TYPE)
   description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean            @default(true)
+  parentId    String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
-  products Product[]
+  // Jerarquía (categorías y subcategorías dentro de una dimensión)
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
 
+  // Referencias desde productos (cada dimensión usa una relación distinta)
+  products         Product[] @relation("ProductType")
+  materialProducts Product[] @relation("ProductMaterial")
+  colorProducts    Product[] @relation("ProductColor")
+  shapeProducts    Product[] @relation("ProductShape")
+
+  // Nombre único dentro de la misma dimensión y nivel (padre)
+  @@unique([dimension, parentId, name])
+  @@index([dimension])
   @@map("categories")
 }
 
@@ -70,6 +90,9 @@ model Product {
   name        String
   description String?
   categoryId  String
+  materialId  String?
+  colorId     String?
+  shapeId     String?
   costPrice   Decimal       @db.Decimal(10, 2)
   salePrice   Decimal       @db.Decimal(10, 2)
   stockMin    Int           @default(0)
@@ -78,15 +101,22 @@ model Product {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  category   Category       @relation(fields: [categoryId], references: [id])
+  category   Category       @relation("ProductType", fields: [categoryId], references: [id])
+  material   Category?      @relation("ProductMaterial", fields: [materialId], references: [id])
+  color      Category?      @relation("ProductColor", fields: [colorId], references: [id])
+  shape      Category?      @relation("ProductShape", fields: [shapeId], references: [id])
   images     ProductImage[]
   inventory  Inventory?
   qrCode     QRCode?
   saleItems  SaleItem[]
   orderItems OrderItem[]
+  countItems InventoryCountItem[]
 
   @@index([sku])
   @@index([categoryId])
+  @@index([materialId])
+  @@index([colorId])
+  @@index([shapeId])
   @@index([status])
   @@map("products")
 }
@@ -116,11 +146,21 @@ model Inventory {
   stock     Int      @default(0)
   updatedAt DateTime @updatedAt
 
-  product   Product             @relation(fields: [productId], references: [id])
+  product   Product                 @relation(fields: [productId], references: [id])
   movements InventoryMovement[]
+  locations InventoryStockLocation[]
 
   @@index([productId])
   @@map("inventory")
+}
+
+// Ubicación / canal de venta donde se distribuye el stock de un producto.
+// BODEGA (inventario general) se deriva: stock total − suma de canales.
+enum StockLocation {
+  BODEGA
+  TIENDA
+  ONLINE
+  LIVE
 }
 
 enum MovementType {
@@ -130,24 +170,103 @@ enum MovementType {
   LOSS
   DAMAGE
   ADJUSTMENT
+  TRANSFER
+}
+
+// Stock asignado explícitamente a un canal (Tienda / Online / Live).
+model InventoryStockLocation {
+  id          String        @id @default(uuid())
+  inventoryId String
+  location    StockLocation
+  quantity    Int           @default(0)
+  updatedAt   DateTime      @updatedAt
+
+  inventory Inventory @relation(fields: [inventoryId], references: [id], onDelete: Cascade)
+
+  @@unique([inventoryId, location])
+  @@index([inventoryId])
+  @@index([location])
+  @@map("inventory_stock_locations")
 }
 
 model InventoryMovement {
-  id          String       @id @default(uuid())
-  inventoryId String
-  type        MovementType
-  quantity    Int
-  reference   String?
-  notes       String?
-  createdBy   String?
-  createdAt   DateTime     @default(now())
+  id           String         @id @default(uuid())
+  inventoryId  String
+  type         MovementType
+  quantity     Int
+  // Origen de la salida (ej. al vender desde Tienda) o de un traspaso
+  fromLocation StockLocation?
+  // Destino: entrada a una ubicación o destino del traspaso
+  location     StockLocation?
+  reference    String?
+  notes        String?
+  createdBy    String?
+  createdAt    DateTime       @default(now())
 
   inventory Inventory @relation(fields: [inventoryId], references: [id])
 
   @@index([inventoryId])
   @@index([createdAt])
   @@index([type])
+  @@index([location])
   @@map("inventory_movements")
+}
+
+// ─────────────────────────────────────────
+// CONTEOS CÍCLICOS DE INVENTARIO (checklist físico)
+// ─────────────────────────────────────────
+
+enum InventoryCountStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// Cadencia sugerida del conteo: una vez, semanal o dos veces al mes
+enum InventoryCountFrequency {
+  ONCE
+  WEEKLY
+  BIWEEKLY
+}
+
+model InventoryCount {
+  id          String                   @id @default(uuid())
+  location    StockLocation
+  frequency   InventoryCountFrequency  @default(ONCE)
+  status      InventoryCountStatus     @default(IN_PROGRESS)
+  notes       String?
+  countedBy   String?
+  createdAt   DateTime                 @default(now())
+  startedAt   DateTime?
+  completedAt DateTime?
+
+  items InventoryCountItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([location])
+  @@map("inventory_counts")
+}
+
+model InventoryCountItem {
+  id        String    @id @default(uuid())
+  countId   String
+  productId String
+  // Stock del sistema al momento de iniciar el conteo (lo esperado)
+  expected  Int
+  // Lo físicamente contado (null = pendiente de contar)
+  counted   Int?
+  // counted - expected; recalculado al guardar cada producto
+  diff      Int?
+  checkedAt DateTime?
+
+  count   InventoryCount @relation(fields: [countId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id])
+
+  @@index([countId])
+  @@index([productId])
+  @@map("inventory_count_items")
 }
 
 // ─────────────────────────────────────────
@@ -221,6 +340,7 @@ model Sale {
   customer Customer? @relation(fields: [customerId], references: [id])
   items    SaleItem[]
   payments Payment[]
+  orders   Order[]
 
   @@index([userId])
   @@index([createdAt])
@@ -258,20 +378,29 @@ enum OrderStatus {
   CANCELLED
 }
 
+// Retiro en tienda o entrega a domicilio (delivery)
+enum OrderFulfillmentType {
+  PICKUP
+  DELIVERY
+}
+
 model Order {
-  id           String      @id @default(uuid())
-  customerId   String?
-  status       OrderStatus @default(PENDING)
-  subtotal     Decimal     @db.Decimal(10, 2)
-  deliveryFee  Decimal     @default(0) @db.Decimal(10, 2)
-  total        Decimal     @db.Decimal(10, 2)
-  address      String?
-  notes        String?
-  whatsappSent Boolean     @default(false)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id              String               @id @default(uuid())
+  customerId      String?
+  status          OrderStatus          @default(PENDING)
+  fulfillmentType OrderFulfillmentType @default(PICKUP)
+  subtotal        Decimal              @db.Decimal(10, 2)
+  deliveryFee     Decimal              @default(0) @db.Decimal(10, 2)
+  total           Decimal              @db.Decimal(10, 2)
+  address         String?
+  notes           String?
+  whatsappSent    Boolean              @default(false)
+  saleId          String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
 
   customer Customer?   @relation(fields: [customerId], references: [id])
+  sale     Sale?       @relation(fields: [saleId], references: [id])
   items    OrderItem[]
   payments Payment[]
 
@@ -282,12 +411,14 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(uuid())
+  id        String    @id @default(uuid())
   orderId   String
   productId String
   quantity  Int
-  unitPrice Decimal @db.Decimal(10, 2)
-  subtotal  Decimal @db.Decimal(10, 2)
+  unitPrice Decimal   @db.Decimal(10, 2)
+  subtotal  Decimal   @db.Decimal(10, 2)
+  checkedAt DateTime?
+  checkedBy String?
 
   order   Order   @relation(fields: [orderId], references: [id])
   product Product @relation(fields: [productId], references: [id])

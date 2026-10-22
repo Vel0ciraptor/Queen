@@ -51,13 +51,25 @@ export class CatalogController {
 
   @Get('products')
   @ApiOperation({ summary: 'Get products in public catalog with filters' })
-  @ApiQuery({ name: 'categoryId', required: false, type: String })
+  @ApiQuery({ name: 'categoryId', required: false, type: String, description: 'Tipo de joya' })
+  @ApiQuery({ name: 'materialId', required: false, type: String })
+  @ApiQuery({ name: 'colorId', required: false, type: String })
+  @ApiQuery({ name: 'shapeId', required: false, type: String })
   @ApiQuery({ name: 'search', required: false, type: String })
   getProducts(
     @Query('categoryId') categoryId?: string,
     @Query('search') search?: string,
+    @Query('materialId') materialId?: string,
+    @Query('colorId') colorId?: string,
+    @Query('shapeId') shapeId?: string,
   ) {
-    return this.catalogService.getCatalogProducts(categoryId, search);
+    return this.catalogService.getCatalogProducts(
+      categoryId,
+      search,
+      materialId,
+      colorId,
+      shapeId,
+    );
   }
 
   @Get('featured')

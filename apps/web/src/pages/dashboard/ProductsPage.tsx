@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Package,
   Plus,
@@ -25,6 +25,9 @@ interface ProductRow {
   name: string;
   description?: string;
   categoryId: string;
+  materialId?: string | null;
+  colorId?: string | null;
+  shapeId?: string | null;
   costPrice: string | number;
   salePrice: string | number;
   stockMin?: number;
@@ -32,13 +35,41 @@ interface ProductRow {
   status: 'ACTIVE' | 'INACTIVE';
   createdAt?: string;
   category?: { id: string; name: string };
+  material?: { id: string; name: string } | null;
+  color?: { id: string; name: string } | null;
+  shape?: { id: string; name: string } | null;
   inventory?: { stock: number };
   images?: { id: string; url: string; isPrimary: boolean; order: number }[];
 }
 
+type Dimension = 'TYPE' | 'MATERIAL' | 'COLOR' | 'SHAPE';
+
 interface CategoryOption {
   id: string;
   name: string;
+  dimension: Dimension;
+  parentId?: string | null;
+}
+
+// Ordena las opciones de una dimensión como árbol plano con indentación visual.
+function treeOptions(rows: CategoryOption[]): CategoryOption[] {
+  const byParent = new Map<string | null, CategoryOption[]>();
+  for (const r of rows) {
+    const pid = r.parentId ?? null;
+    const arr = byParent.get(pid) ?? [];
+    arr.push(r);
+    byParent.set(pid, arr);
+  }
+  const out: CategoryOption[] = [];
+  const visit = (pid: string | null, depth: number) => {
+    const children = (byParent.get(pid) ?? []).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    for (const c of children) {
+      out.push({ ...c, name: `${' '.repeat(depth * 3)}${depth > 0 ? '└ ' : ''}${c.name}` });
+      visit(c.id, depth + 1);
+    }
+  };
+  visit(null, 0);
+  return out;
 }
 
 const emptyForm = {
@@ -46,6 +77,9 @@ const emptyForm = {
   name: '',
   description: '',
   categoryId: '',
+  materialId: '',
+  colorId: '',
+  shapeId: '',
   costPrice: '',
   salePrice: '',
   stockMin: '0',
@@ -64,7 +98,10 @@ export const ProductsPage: React.FC = () => {
   const [meta, setMeta] = useState({ page: 1, totalPages: 1, total: 0, limit: 20 });
 
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [materialFilter, setMaterialFilter] = useState('');
+  const [colorFilter, setColorFilter] = useState('');
+  const [shapeFilter, setShapeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
 
@@ -72,6 +109,9 @@ export const ProductsPage: React.FC = () => {
   const [editing, setEditing] = useState<ProductRow | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  // true si el usuario escribió el SKU a mano (no se sobreescribe con el auto)
+  const skuTouchedRef = useRef(false);
 
   const [imagesProduct, setImagesProduct] = useState<ProductRow | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -84,7 +124,10 @@ export const ProductsPage: React.FC = () => {
       const res = await api.get('/products', {
         params: {
           search: search || undefined,
-          categoryId: categoryFilter || undefined,
+          categoryId: typeFilter || undefined,
+          materialId: materialFilter || undefined,
+          colorId: colorFilter || undefined,
+          shapeId: shapeFilter || undefined,
           status: statusFilter || undefined,
           page,
           limit: 20,
@@ -102,11 +145,15 @@ export const ProductsPage: React.FC = () => {
   const fetchCategories = async () => {
     try {
       const res = await api.get('/categories');
-      setCategories(res.data ?? []);
+      const list: CategoryOption[] = Array.isArray(res.data) ? res.data : res.data?.items ?? [];
+      setCategories(list);
     } catch {
       /* el select queda vacío si falla */
     }
   };
+
+  // Opciones por dimensión, como árbol indentado.
+  const byDimension = (d: Dimension) => treeOptions(categories.filter((c) => c.dimension === d));
 
   useEffect(() => {
     void fetchCategories();
@@ -115,25 +162,67 @@ export const ProductsPage: React.FC = () => {
   useEffect(() => {
     void fetchProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, categoryFilter, statusFilter, page]);
+  }, [search, typeFilter, materialFilter, colorFilter, shapeFilter, statusFilter, page]);
 
   useEffect(() => {
     setPage(1);
-  }, [search, categoryFilter, statusFilter]);
+  }, [search, typeFilter, materialFilter, colorFilter, shapeFilter, statusFilter]);
+
+  // SKU automático: el servidor prellena la secuencia (TIPO-MATERIAL-COLOR[-FORMA]-00001)
+  // cuando cambian las dimensiones. Solo en creación y sin edición manual.
+  useEffect(() => {
+    if (!isFormOpen || editing) return;
+    if (!form.categoryId || !form.materialId || !form.colorId) return;
+    if (skuTouchedRef.current && form.sku.trim()) return;
+
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.get('/products/next-sku', {
+          params: {
+            categoryId: form.categoryId,
+            materialId: form.materialId,
+            colorId: form.colorId,
+            shapeId: form.shapeId || undefined,
+          },
+        });
+        const sku = res.data?.sku as string | undefined;
+        if (sku && !skuTouchedRef.current) {
+          setForm((f) => (f.sku === sku ? f : { ...f, sku }));
+        }
+      } catch {
+        /* si falla, el usuario puede escribir el SKU a mano */
+      }
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isFormOpen,
+    editing,
+    form.categoryId,
+    form.materialId,
+    form.colorId,
+    form.shapeId,
+    form.sku,
+  ]);
 
   const openCreate = () => {
     setEditing(null);
     setForm(emptyForm);
+    skuTouchedRef.current = false;
     setIsFormOpen(true);
   };
 
   const openEdit = (product: ProductRow) => {
     setEditing(product);
+    skuTouchedRef.current = true;
     setForm({
       sku: product.sku,
       name: product.name,
       description: product.description || '',
       categoryId: product.categoryId,
+      materialId: product.materialId || '',
+      colorId: product.colorId || '',
+      shapeId: product.shapeId || '',
       costPrice: String(product.costPrice),
       salePrice: String(product.salePrice),
       stockMin: String(product.stockMin ?? 0),
@@ -153,6 +242,9 @@ export const ProductsPage: React.FC = () => {
         name: form.name.trim(),
         description: form.description.trim() || undefined,
         categoryId: form.categoryId,
+        materialId: form.materialId,
+        colorId: form.colorId,
+        shapeId: form.shapeId || undefined,
         costPrice: Number(form.costPrice),
         salePrice: Number(form.salePrice),
         stockMin: Number(form.stockMin || 0),
@@ -258,8 +350,8 @@ export const ProductsPage: React.FC = () => {
       </div>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="relative">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="relative col-span-2 sm:col-span-3 lg:col-span-2">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             value={search}
@@ -269,26 +361,64 @@ export const ProductsPage: React.FC = () => {
           />
         </div>
         <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value)}
           className="input-luxury text-sm"
         >
-          <option value="">Todas las categorías</option>
-          {categories.map((c) => (
+          <option value="">Todos los tipos</option>
+          {byDimension('TYPE').map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
             </option>
           ))}
         </select>
         <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          value={materialFilter}
+          onChange={(e) => setMaterialFilter(e.target.value)}
           className="input-luxury text-sm"
         >
-          <option value="">Todos los estados</option>
-          <option value="ACTIVE">Activos</option>
-          <option value="INACTIVE">Inactivos</option>
+          <option value="">Todos los materiales</option>
+          {byDimension('MATERIAL').map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
         </select>
+        <select
+          value={colorFilter}
+          onChange={(e) => setColorFilter(e.target.value)}
+          className="input-luxury text-sm"
+        >
+          <option value="">Todos los colores</option>
+          {byDimension('COLOR').map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <div className="grid grid-cols-2 gap-3 col-span-2 sm:col-span-3 lg:col-span-1">
+          <select
+            value={shapeFilter}
+            onChange={(e) => setShapeFilter(e.target.value)}
+            className="input-luxury text-sm"
+          >
+            <option value="">Todas las formas</option>
+            {byDimension('SHAPE').map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input-luxury text-sm"
+          >
+            <option value="">Todos los estados</option>
+            <option value="ACTIVE">Activos</option>
+            <option value="INACTIVE">Inactivos</option>
+          </select>
+        </div>
       </div>
 
       {/* List */}
@@ -316,7 +446,7 @@ export const ProductsPage: React.FC = () => {
                 <thead>
                   <tr>
                     <th>Producto</th>
-                    <th>Categoría</th>
+                    <th>Tipo · Material · Color</th>
                     <th>Precio</th>
                     <th>Stock</th>
                     <th>Estado</th>
@@ -346,7 +476,14 @@ export const ProductsPage: React.FC = () => {
                           </div>
                         </div>
                       </td>
-                      <td className="text-xs text-slate-300">{product.category?.name || '—'}</td>
+                      <td className="text-xs text-slate-300">
+                        <div>{product.category?.name || '—'}</div>
+                        <div className="text-[11px] text-slate-500">
+                          {[product.material?.name, product.color?.name, product.shape?.name]
+                            .filter(Boolean)
+                            .join(' · ') || '—'}
+                        </div>
+                      </td>
                       <td className="text-sm font-semibold text-white">
                         {currency(product.salePrice)}
                         <div className="text-[11px] text-slate-500 font-normal">
@@ -422,6 +559,8 @@ export const ProductsPage: React.FC = () => {
                         <div className="text-[11px] text-slate-500 font-mono">{product.sku}</div>
                         <div className="text-[11px] text-slate-400 mt-0.5">
                           {product.category?.name || '—'}
+                          {product.material?.name ? ` · ${product.material.name}` : ''}
+                          {product.color?.name ? ` · ${product.color.name}` : ''}
                         </div>
                       </div>
                       <span
@@ -514,18 +653,30 @@ export const ProductsPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">SKU *</label>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">
+              SKU *{skuTouchedRef.current ? '' : ' (auto)'}
+            </label>
             <input
               value={form.sku}
-              onChange={(e) => setForm((f) => ({ ...f, sku: e.target.value }))}
+              onChange={(e) => {
+                const value = e.target.value;
+                skuTouchedRef.current = value.trim() !== '';
+                setForm((f) => ({ ...f, sku: value }));
+              }}
               required
-              placeholder="QS-DRS-001"
+              placeholder="ANI-ORO-DOR-00001"
               className="input-luxury text-sm font-mono uppercase"
             />
+            {!skuTouchedRef.current && (
+              <p className="text-[10px] text-slate-500 mt-1">
+                Generado de tipo + material + color + forma con secuencia de 5 dígitos
+                (se incrementa automáticamente).
+              </p>
+            )}
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">Categoría *</label>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">Tipo de joya *</label>
             <select
               value={form.categoryId}
               onChange={(e) => setForm((f) => ({ ...f, categoryId: e.target.value }))}
@@ -533,7 +684,57 @@ export const ProductsPage: React.FC = () => {
               className="input-luxury text-sm"
             >
               <option value="">Selecciona…</option>
-              {categories.map((c) => (
+              {byDimension('TYPE').map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">Material *</label>
+            <select
+              value={form.materialId}
+              onChange={(e) => setForm((f) => ({ ...f, materialId: e.target.value }))}
+              required
+              className="input-luxury text-sm"
+            >
+              <option value="">Selecciona…</option>
+              {byDimension('MATERIAL').map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">Color *</label>
+            <select
+              value={form.colorId}
+              onChange={(e) => setForm((f) => ({ ...f, colorId: e.target.value }))}
+              required
+              className="input-luxury text-sm"
+            >
+              <option value="">Selecciona…</option>
+              {byDimension('COLOR').map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-slate-300 mb-1.5">Forma (opcional)</label>
+            <select
+              value={form.shapeId}
+              onChange={(e) => setForm((f) => ({ ...f, shapeId: e.target.value }))}
+              className="input-luxury text-sm"
+            >
+              <option value="">— Sin forma —</option>
+              {byDimension('SHAPE').map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>

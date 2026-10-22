@@ -19,6 +19,7 @@ import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
+import { NextSkuDto } from './dto/next-sku.dto';
 import { JwtAccessGuard } from '../../common/guards/jwt-access.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles, Role } from '../../common/decorators/roles.decorator';
@@ -58,6 +59,14 @@ export class ProductsController {
   @ApiOperation({ summary: 'Get product by SKU' })
   findBySku(@Param('sku') sku: string) {
     return this.productsService.findBySku(sku);
+  }
+
+  @Get('next-sku')
+  @ApiOperation({
+    summary: 'Preview the next auto-generated SKU for a set of dimensions',
+  })
+  previewNextSku(@Query() nextSkuDto: NextSkuDto) {
+    return this.productsService.previewNextSku(nextSkuDto);
   }
 
   @Get(':id')

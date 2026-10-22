@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsEmail,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -12,6 +13,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { OrderFulfillmentType } from '@prisma/client';
 
 export class CreateOrderItemDto {
   @ApiProperty({ example: 'uuid-de-producto' })
@@ -58,6 +60,15 @@ export class CreateOrderDto {
   @IsNumber()
   @Min(0)
   deliveryFee?: number;
+
+  @ApiPropertyOptional({
+    enum: OrderFulfillmentType,
+    example: OrderFulfillmentType.PICKUP,
+    description: 'Retiro en tienda o delivery; por defecto DELIVERY si hay dirección',
+  })
+  @IsOptional()
+  @IsEnum(OrderFulfillmentType, { message: 'Tipo de entrega inválido' })
+  fulfillmentType?: OrderFulfillmentType;
 
   @ApiProperty({ type: [CreateOrderItemDto] })
   @IsArray()

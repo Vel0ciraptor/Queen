@@ -23,6 +23,9 @@ interface SeedProduct {
   name: string;
   description: string;
   categoryId: string;
+  materialId: string;
+  colorId: string;
+  shapeId?: string;
   costPrice: number;
   salePrice: number;
   initialStock: number;
@@ -32,22 +35,64 @@ interface SeedProduct {
   withImages?: boolean;
 }
 
+interface SeedCategory {
+  id: string;
+  name: string;
+  dimension: 'TYPE' | 'MATERIAL' | 'COLOR' | 'SHAPE';
+  parentId?: string;
+  description?: string;
+}
+
+// Catálogo de joyería por dimensión (Tipo, Material, Color, Forma opcional).
+// parentId permite subcategorías dentro de una misma dimensión.
+const CATEGORIES: SeedCategory[] = [
+  // ── TIPO ──
+  { id: 'cat-type-anillos', name: 'Anillos', dimension: 'TYPE', description: 'Anillos de fantasía y compromiso' },
+  { id: 'cat-type-anillos-compromiso', name: 'Anillos de compromiso', dimension: 'TYPE', parentId: 'cat-type-anillos', description: 'Anillos con piedra central' },
+  { id: 'cat-type-anillos-alianzas', name: 'Alianzas', dimension: 'TYPE', parentId: 'cat-type-anillos', description: 'Alianzas de boda' },
+  { id: 'cat-type-collares', name: 'Collares', dimension: 'TYPE', description: 'Collares y cadenas' },
+  { id: 'cat-type-pulseras', name: 'Pulseras', dimension: 'TYPE', description: 'Pulseras y manillas' },
+  { id: 'cat-type-aretes', name: 'Aretes', dimension: 'TYPE', description: 'Aretes y pendientes' },
+  { id: 'cat-type-dijes', name: 'Dijes', dimension: 'TYPE', description: 'Dijes y colgantes' },
+
+  // ── MATERIAL ──
+  { id: 'cat-mat-oro', name: 'Oro', dimension: 'MATERIAL', description: 'Joyas de oro' },
+  { id: 'cat-mat-oro-18k', name: 'Oro 18k', dimension: 'MATERIAL', parentId: 'cat-mat-oro', description: 'Oro 18 quilates' },
+  { id: 'cat-mat-oro-14k', name: 'Oro 14k', dimension: 'MATERIAL', parentId: 'cat-mat-oro', description: 'Oro 14 quilates' },
+  { id: 'cat-mat-plata', name: 'Plata', dimension: 'MATERIAL', description: 'Plata de ley' },
+  { id: 'cat-mat-oro-blanco', name: 'Oro blanco', dimension: 'MATERIAL', description: 'Oro blanco' },
+  { id: 'cat-mat-acero', name: 'Acero', dimension: 'MATERIAL', description: 'Acero inoxidable' },
+
+  // ── COLOR ──
+  { id: 'cat-color-dorado', name: 'Dorado', dimension: 'COLOR', description: 'Color dorado' },
+  { id: 'cat-color-plateado', name: 'Plateado', dimension: 'COLOR', description: 'Color plateado' },
+  { id: 'cat-color-rosa', name: 'Rosa', dimension: 'COLOR', description: 'Rosa / oro rosa' },
+  { id: 'cat-color-negro', name: 'Negro', dimension: 'COLOR', description: 'Color negro' },
+  { id: 'cat-color-blanco', name: 'Blanco', dimension: 'COLOR', description: 'Color blanco' },
+
+  // ── FORMA (opcional) ──
+  { id: 'cat-shape-redondo', name: 'Redondo', dimension: 'SHAPE', description: 'Forma redonda' },
+  { id: 'cat-shape-corazon', name: 'Corazón', dimension: 'SHAPE', description: 'Forma de corazón' },
+  { id: 'cat-shape-estrella', name: 'Estrella', dimension: 'SHAPE', description: 'Forma de estrella' },
+  { id: 'cat-shape-cuadrado', name: 'Cuadrado', dimension: 'SHAPE', description: 'Forma cuadrada' },
+];
+
 const PRODUCTS: SeedProduct[] = [
-  { id: 'p-01', sku: 'QS-VST-001', name: 'Vestido Floral Verano', description: 'Vestido largo estampado floral, tela fresca ideal para verano. Tallas S, M, L.', categoryId: 'cat-1', costPrice: 18, salePrice: 45, initialStock: 14, stockMin: 4, createdAtDaysAgo: 16, withImages: true },
-  { id: 'p-02', sku: 'QS-VST-002', name: 'Vestido Midi Elegante', description: 'Vestido midi con cintura marcada, perfecto para eventos formales.', categoryId: 'cat-1', costPrice: 22, salePrice: 59, initialStock: 9, stockMin: 3, createdAtDaysAgo: 16, withImages: true },
-  { id: 'p-03', sku: 'QS-VST-003', name: 'Vestido Negro Clásico', description: 'El imprescindible vestido negro, corte recto y elegante.', categoryId: 'cat-1', costPrice: 20, salePrice: 52, initialStock: 3, stockMin: 4, createdAtDaysAgo: 15, withImages: true },
-  { id: 'p-04', sku: 'QS-BLS-001', name: 'Blusa Seda Blanca', description: 'Blusa de seda sintética con cuello tipo camisa. Look oficina.', categoryId: 'cat-2', costPrice: 12, salePrice: 32, initialStock: 20, stockMin: 5, createdAtDaysAgo: 15, withImages: true },
-  { id: 'p-05', sku: 'QS-BLS-002', name: 'Blusa Oversize Rosa', description: 'Blusa oversize color rosa Queen, tejido algodón suave.', categoryId: 'cat-2', costPrice: 10, salePrice: 28, initialStock: 11, stockMin: 4, createdAtDaysAgo: 14, withImages: true },
-  { id: 'p-06', sku: 'QS-BLS-003', name: 'Blusa Bordada Artesanal', description: 'Blusa con bordado hecho a mano, piezas únicas.', categoryId: 'cat-2', costPrice: 14, salePrice: 38, initialStock: 0, stockMin: 3, createdAtDaysAgo: 14, withImages: false },
-  { id: 'p-07', sku: 'QS-PNT-001', name: 'Jean Skinny Azul', description: 'Jean skinny tiro alto, denim con stretch. Tallas 26-32.', categoryId: 'cat-3', costPrice: 15, salePrice: 42, initialStock: 16, stockMin: 5, createdAtDaysAgo: 14, withImages: true },
-  { id: 'p-08', sku: 'QS-PNT-002', name: 'Pantalón Wide Leg', description: 'Pantalón de pierna ancha con vuelo, súper favorecedor.', categoryId: 'cat-3', costPrice: 16, salePrice: 46, initialStock: 8, stockMin: 3, createdAtDaysAgo: 13, withImages: true },
-  { id: 'p-09', sku: 'QS-PNT-003', name: 'Shorts Denim Rotos', description: 'Shorts jeans con desgastes, estilo urbano.', categoryId: 'cat-3', costPrice: 9, salePrice: 26, initialStock: 4, stockMin: 4, createdAtDaysAgo: 13, withImages: false },
-  { id: 'p-10', sku: 'QS-ACC-001', name: 'Bolso Tote Cuero', description: 'Bolso tote tipo shopper, acabado en cuero vegano.', categoryId: 'cat-4', costPrice: 25, salePrice: 68, initialStock: 7, stockMin: 2, createdAtDaysAgo: 12, withImages: true },
-  { id: 'p-11', sku: 'QS-ACC-002', name: 'Pañuelo Seda Estampado', description: 'Pañuelo cuadrado estampado, múltiples usos.', categoryId: 'cat-4', costPrice: 6, salePrice: 19, initialStock: 25, stockMin: 6, createdAtDaysAgo: 12, withImages: false },
-  { id: 'p-12', sku: 'QS-ACC-003', name: 'Cinturón Dorado', description: 'Cinturón con hebilla dorada, marca la cintura.', categoryId: 'cat-4', costPrice: 5, salePrice: 17, initialStock: 4, stockMin: 3, createdAtDaysAgo: 12, withImages: false },
-  { id: 'p-13', sku: 'QS-ZAP-001', name: 'Tacones Rojos Passion', description: 'Tacones rojos de 8 cm, piel sintética forrada.', categoryId: 'cat-5', costPrice: 28, salePrice: 75, initialStock: 6, stockMin: 2, createdAtDaysAgo: 11, withImages: true },
-  { id: 'p-14', sku: 'QS-ZAP-002', name: 'Sneakers Blancos Urban', description: 'Zapatillas blancas minimalistas, suela antideslizante.', categoryId: 'cat-5', costPrice: 24, salePrice: 65, initialStock: 12, stockMin: 4, createdAtDaysAgo: 11, withImages: true },
-  { id: 'p-15', sku: 'QS-ZAP-003', name: 'Sandalias Doradas', description: 'Sandalias planas con tiras doradas, cómodas para el día a día.', categoryId: 'cat-5', costPrice: 11, salePrice: 34, initialStock: 10, stockMin: 3, status: 'INACTIVE', createdAtDaysAgo: 11, withImages: true },
+  { id: 'p-01', sku: 'QS-ANL-001', name: 'Anillo Solitario Oro 18k', description: 'Anillo solitario con piedra central, oro 18k. Ideal para compromisos.', categoryId: 'cat-type-anillos-compromiso', materialId: 'cat-mat-oro-18k', colorId: 'cat-color-dorado', shapeId: 'cat-shape-redondo', costPrice: 120, salePrice: 280, initialStock: 10, stockMin: 3, createdAtDaysAgo: 16, withImages: true },
+  { id: 'p-02', sku: 'QS-ANL-002', name: 'Anillo Compromiso Corazón', description: 'Anillo de compromiso con piedra en forma de corazón, oro 18k.', categoryId: 'cat-type-anillos-compromiso', materialId: 'cat-mat-oro-18k', colorId: 'cat-color-dorado', shapeId: 'cat-shape-corazon', costPrice: 150, salePrice: 340, initialStock: 6, stockMin: 2, createdAtDaysAgo: 16, withImages: true },
+  { id: 'p-03', sku: 'QS-ALZ-001', name: 'Alianza Clásica Oro 14k', description: 'Alianza de boda clásica en oro 14k, acabado pulido.', categoryId: 'cat-type-anillos-alianzas', materialId: 'cat-mat-oro-14k', colorId: 'cat-color-dorado', shapeId: 'cat-shape-redondo', costPrice: 90, salePrice: 210, initialStock: 12, stockMin: 4, createdAtDaysAgo: 15, withImages: true },
+  { id: 'p-04', sku: 'QS-COL-001', name: 'Collar Cadena Oro 14k', description: 'Collar de cadena eslabón en oro 14k, largo ajustable.', categoryId: 'cat-type-collares', materialId: 'cat-mat-oro-14k', colorId: 'cat-color-dorado', costPrice: 80, salePrice: 190, initialStock: 9, stockMin: 3, createdAtDaysAgo: 15, withImages: true },
+  { id: 'p-05', sku: 'QS-COL-002', name: 'Collar Dije Corazón Plata', description: 'Collar de plata con dije de corazón. Pieza delicada y moderna.', categoryId: 'cat-type-collares', materialId: 'cat-mat-plata', colorId: 'cat-color-plateado', shapeId: 'cat-shape-corazon', costPrice: 35, salePrice: 85, initialStock: 14, stockMin: 4, createdAtDaysAgo: 14, withImages: true },
+  { id: 'p-06', sku: 'QS-COL-003', name: 'Collar Perlas Blanco', description: 'Collar de perlas en color blanco, cierre de plata.', categoryId: 'cat-type-collares', materialId: 'cat-mat-plata', colorId: 'cat-color-blanco', costPrice: 45, salePrice: 110, initialStock: 0, stockMin: 3, createdAtDaysAgo: 14, withImages: false },
+  { id: 'p-07', sku: 'QS-PUL-001', name: 'Pulsera Eslabones Oro 18k', description: 'Pulsera de eslabones en oro 18k, hebillón seguro.', categoryId: 'cat-type-pulseras', materialId: 'cat-mat-oro-18k', colorId: 'cat-color-dorado', costPrice: 130, salePrice: 300, initialStock: 7, stockMin: 2, createdAtDaysAgo: 14, withImages: true },
+  { id: 'p-08', sku: 'QS-PUL-002', name: 'Pulsera Trenzada Plata', description: 'Pulsera trenzada de plata de ley, acabado oxidado.', categoryId: 'cat-type-pulseras', materialId: 'cat-mat-plata', colorId: 'cat-color-plateado', costPrice: 40, salePrice: 95, initialStock: 11, stockMin: 3, createdAtDaysAgo: 13, withImages: true },
+  { id: 'p-09', sku: 'QS-PUL-003', name: 'Pulsera Acero Negra', description: 'Pulsera de acero inoxidable color negro, look urbano.', categoryId: 'cat-type-pulseras', materialId: 'cat-mat-acero', colorId: 'cat-color-negro', costPrice: 25, salePrice: 65, initialStock: 18, stockMin: 5, createdAtDaysAgo: 13, withImages: false },
+  { id: 'p-10', sku: 'QS-ART-001', name: 'Aretes Estrella Oro 14k', description: 'Aretes en forma de estrella en oro 14k, cierre de presión.', categoryId: 'cat-type-aretes', materialId: 'cat-mat-oro-14k', colorId: 'cat-color-dorado', shapeId: 'cat-shape-estrella', costPrice: 55, salePrice: 130, initialStock: 8, stockMin: 3, createdAtDaysAgo: 12, withImages: true },
+  { id: 'p-11', sku: 'QS-ART-002', name: 'Aretes Goteros Plata', description: 'Aretes goteros de plata de ley, cierre mariposa.', categoryId: 'cat-type-aretes', materialId: 'cat-mat-plata', colorId: 'cat-color-plateado', costPrice: 30, salePrice: 72, initialStock: 20, stockMin: 6, createdAtDaysAgo: 12, withImages: false },
+  { id: 'p-12', sku: 'QS-ART-003', name: 'Aretes Cuadrado Oro Blanco', description: 'Aretes cuadrados en oro blanco, diseño geométrico.', categoryId: 'cat-type-aretes', materialId: 'cat-mat-oro-blanco', colorId: 'cat-color-blanco', shapeId: 'cat-shape-cuadrado', costPrice: 65, salePrice: 150, initialStock: 5, stockMin: 2, createdAtDaysAgo: 12, withImages: true },
+  { id: 'p-13', sku: 'QS-DIJ-001', name: 'Dije Inicial Oro 18k', description: 'Dije con inicial personalizada en oro 18k. Varios modelos.', categoryId: 'cat-type-dijes', materialId: 'cat-mat-oro-18k', colorId: 'cat-color-dorado', costPrice: 50, salePrice: 120, initialStock: 15, stockMin: 4, createdAtDaysAgo: 11, withImages: true },
+  { id: 'p-14', sku: 'QS-DIJ-002', name: 'Dije Cruz Plata', description: 'Dije de cruz en plata de ley, acabado brillante.', categoryId: 'cat-type-dijes', materialId: 'cat-mat-plata', colorId: 'cat-color-plateado', costPrice: 28, salePrice: 68, initialStock: 13, stockMin: 4, createdAtDaysAgo: 11, withImages: false },
+  { id: 'p-15', sku: 'QS-DIJ-003', name: 'Dije Estrella Oro Rosa', description: 'Dije de estrella en oro rosa, con circonitas.', categoryId: 'cat-type-dijes', materialId: 'cat-mat-oro-14k', colorId: 'cat-color-rosa', shapeId: 'cat-shape-estrella', costPrice: 60, salePrice: 145, initialStock: 10, stockMin: 3, status: 'INACTIVE', createdAtDaysAgo: 11, withImages: true },
 ];
 
 interface SeedSaleItem {
@@ -90,6 +135,7 @@ interface SeedOrder {
   id: string;
   customerId: string;
   status: 'PENDING' | 'CONFIRMED' | 'DELIVERED' | 'CANCELLED';
+  fulfillmentType?: 'PICKUP' | 'DELIVERY';
   daysAgo: number;
   h: number;
   items: SeedOrderItem[];
@@ -100,10 +146,10 @@ interface SeedOrder {
 }
 
 const ORDERS: SeedOrder[] = [
-  { id: 'o-01', customerId: 'c-2', status: 'PENDING', daysAgo: 1, h: 16, items: [{ productId: 'p-01', quantity: 1 }, { productId: 'p-11', quantity: 1 }], deliveryFee: 5, address: 'Av. Principal 123, Caracas', notes: 'Entregar después de las 5pm', whatsappSent: true },
-  { id: 'o-02', customerId: 'c-4', status: 'CONFIRMED', daysAgo: 3, h: 11, items: [{ productId: 'p-13', quantity: 1 }, { productId: 'p-14', quantity: 1 }], deliveryFee: 0, address: 'Calle Bolívar 45, Los Teques', whatsappSent: true },
-  { id: 'o-03', customerId: 'c-1', status: 'DELIVERED', daysAgo: 8, h: 9, items: [{ productId: 'p-07', quantity: 1 }], deliveryFee: 5, address: 'Urb. Las Flores, casa 8', whatsappSent: true },
-  { id: 'o-04', customerId: 'c-3', status: 'CANCELLED', daysAgo: 2, h: 18, items: [{ productId: 'p-05', quantity: 1 }], deliveryFee: 5, address: 'Sector Norte 7', whatsappSent: false },
+  { id: 'o-01', customerId: 'c-2', status: 'PENDING', fulfillmentType: 'DELIVERY', daysAgo: 1, h: 16, items: [{ productId: 'p-01', quantity: 1 }, { productId: 'p-11', quantity: 1 }], deliveryFee: 5, address: 'Av. Principal 123, Caracas', notes: 'Entregar después de las 5pm', whatsappSent: true },
+  { id: 'o-02', customerId: 'c-4', status: 'CONFIRMED', fulfillmentType: 'DELIVERY', daysAgo: 3, h: 11, items: [{ productId: 'p-13', quantity: 1 }, { productId: 'p-14', quantity: 1 }], deliveryFee: 0, address: 'Calle Bolívar 45, Los Teques', whatsappSent: true },
+  { id: 'o-03', customerId: 'c-1', status: 'DELIVERED', fulfillmentType: 'PICKUP', daysAgo: 8, h: 9, items: [{ productId: 'p-07', quantity: 1 }], deliveryFee: 5, address: 'Urb. Las Flores, casa 8', whatsappSent: true },
+  { id: 'o-04', customerId: 'c-3', status: 'CANCELLED', fulfillmentType: 'DELIVERY', daysAgo: 2, h: 18, items: [{ productId: 'p-05', quantity: 1 }], deliveryFee: 5, address: 'Sector Norte 7', whatsappSent: false },
 ];
 
 const productById = new Map(PRODUCTS.map((p) => [p.id, p]));
@@ -153,20 +199,18 @@ export function buildSeed(): MockStores {
     },
   );
 
-  // ── Categories ──────────────────────────────────────────────────────────────
-  const categories = [
-    { id: 'cat-1', name: 'Vestidos', description: 'Vestidos casuales y formales para toda ocasión' },
-    { id: 'cat-2', name: 'Blusas', description: 'Blusas y tops de temporada' },
-    { id: 'cat-3', name: 'Pantalones', description: 'Jeans, pantalones y shorts' },
-    { id: 'cat-4', name: 'Accesorios', description: 'Bolsos, pañuelos, cinturones y más' },
-    { id: 'cat-5', name: 'Zapatos', description: 'Tacones, sneakers y sandalias' },
-  ];
-  for (const c of categories) {
+  // ── Categories (por dimensión, con subcategorías) ────────────────────────────
+  const catCreatedAt = daysAgo(28, 8);
+  for (const c of CATEGORIES) {
     stores.category.push({
-      ...c,
+      id: c.id,
+      name: c.name,
+      dimension: c.dimension,
+      parentId: c.parentId ?? null,
+      description: c.description ?? null,
       isActive: true,
-      createdAt: daysAgo(28, 8),
-      updatedAt: daysAgo(28, 8),
+      createdAt: catCreatedAt,
+      updatedAt: catCreatedAt,
     });
   }
 
@@ -188,6 +232,9 @@ export function buildSeed(): MockStores {
       name: p.name,
       description: p.description,
       categoryId: p.categoryId,
+      materialId: p.materialId ?? null,
+      colorId: p.colorId ?? null,
+      shapeId: p.shapeId ?? null,
       costPrice: p.costPrice,
       salePrice: p.salePrice,
       stockMin: p.stockMin,
@@ -360,6 +407,8 @@ export function buildSeed(): MockStores {
       const p = productById.get(item.productId)!;
       const itemSubtotal = p.salePrice * item.quantity;
       subtotal += itemSubtotal;
+      // Aceptados y entregados: checklist verificado por el admin
+      const isChecked = o.status === 'CONFIRMED' || o.status === 'DELIVERED';
       stores.orderItem.push({
         id: `oi-${o.id}-${++itemSeq}`,
         orderId: o.id,
@@ -367,6 +416,8 @@ export function buildSeed(): MockStores {
         quantity: item.quantity,
         unitPrice: p.salePrice,
         subtotal: itemSubtotal,
+        checkedAt: isChecked ? createdAt : null,
+        checkedBy: isChecked ? 'u-admin' : null,
       });
     }
 
@@ -376,12 +427,14 @@ export function buildSeed(): MockStores {
       id: o.id,
       customerId: o.customerId,
       status: o.status,
+      fulfillmentType: o.fulfillmentType ?? 'PICKUP',
       subtotal,
       deliveryFee: o.deliveryFee,
       total,
       address: o.address,
       notes: o.notes ?? null,
       whatsappSent: o.whatsappSent,
+      saleId: null,
       createdAt,
       updatedAt: createdAt,
     });
@@ -470,6 +523,136 @@ export function buildSeed(): MockStores {
     inv.stock = Math.max(0, stock.get(productId) ?? 0);
   }
 
+  // ── Distribución por ubicación ──────────────────────────────────────────────
+  // Se guardan explícitamente los canales (TIENDA/ONLINE/LIVE); BODEGA se
+  // deriva como "stock total − suma de canales".
+  let locSeq = 0;
+  const addStockLoc = (inventoryId: string, location: string, quantity: number, updatedAt: Date) => {
+    if (quantity <= 0) return;
+    stores.inventoryStockLocation.push({
+      id: `isl-${++locSeq}`,
+      inventoryId,
+      location,
+      quantity,
+      updatedAt,
+    });
+  };
+  const addTransfer = (
+    inventoryId: string,
+    location: string,
+    quantity: number,
+    reference: string,
+    createdAt: Date,
+  ) => {
+    if (quantity <= 0) return;
+    stores.inventoryMovement.push({
+      id: `mv-transfer-${location.toLowerCase()}-${inventoryId}`,
+      inventoryId,
+      type: 'TRANSFER',
+      quantity,
+      fromLocation: 'BODEGA',
+      location,
+      reference,
+      notes: 'Distribución inicial de inventario a canal de venta',
+      createdBy: 'u-admin',
+      createdAt,
+    });
+  };
+
+  for (const inv of stores.inventory) {
+    const s: number = inv.stock;
+    if (s < 3) continue;
+    const n = Number(String(inv.productId).replace('p-', '')) || 1;
+    const when = daysAgo((n % 10) + 1, 11, 30);
+
+    const tienda = Math.min(s, Math.floor(s * 0.4));
+    const online = s >= 6 ? Math.min(s - tienda, Math.floor(s * 0.25)) : 0;
+    const live = s >= 10 ? Math.min(s - tienda - online, Math.floor(s * 0.15)) : 0;
+
+    addStockLoc(inv.id, 'TIENDA', tienda, when);
+    addStockLoc(inv.id, 'ONLINE', online, when);
+    addStockLoc(inv.id, 'LIVE', live, when);
+
+    addTransfer(inv.id, 'TIENDA', tienda, 'Envío de bodega a tienda', when);
+    addTransfer(inv.id, 'ONLINE', online, 'Reserva de stock para venta online', when);
+    addTransfer(inv.id, 'LIVE', live, 'Reserva de stock para live / en vivo', when);
+  }
+
+  // ── Conteos cíclicos de inventario ─────────────────────────────────────────
+  let countItemSeq = 0;
+  const addCountItem = (
+    countId: string,
+    productId: string,
+    expected: number,
+    counted: number | null,
+    checkedAt: Date | null,
+  ) => {
+    stores.inventoryCountItem.push({
+      id: `ci-${++countItemSeq}`,
+      countId,
+      productId,
+      expected,
+      counted,
+      diff: counted === null ? null : counted - expected,
+      checkedAt,
+    });
+  };
+
+  // Conteo semanal COMPLETADO en Tienda (un faltante para ver el KPI de cuadre)
+  const countDoneAt = daysAgo(3, 10);
+  stores.inventoryCount.push({
+    id: 'ic-01',
+    location: 'TIENDA',
+    frequency: 'WEEKLY',
+    status: 'COMPLETED',
+    notes: 'Conteo semanal de tienda física',
+    countedBy: 'u-promo',
+    createdAt: daysAgo(3, 9),
+    startedAt: daysAgo(3, 9),
+    completedAt: countDoneAt,
+  });
+  let tiendaIdx = 0;
+  for (const l of stores.inventoryStockLocation) {
+    if (l.location !== 'TIENDA' || tiendaIdx >= 8) continue;
+    const inv = stores.inventory.find((i) => i.id === l.inventoryId);
+    if (!inv) continue;
+    tiendaIdx += 1;
+    // El 3er producto tiene un faltante de 1 unidad
+    const counted = tiendaIdx === 3 ? Math.max(0, l.quantity - 1) : l.quantity;
+    addCountItem('ic-01', inv.productId, l.quantity, counted, countDoneAt);
+  }
+
+  // Conteo quincenal EN CURSO en Bodega (1 de 6 productos ya contado)
+  const countStartAt = daysAgo(1, 15);
+  stores.inventoryCount.push({
+    id: 'ic-02',
+    location: 'BODEGA',
+    frequency: 'BIWEEKLY',
+    status: 'IN_PROGRESS',
+    notes: 'Conteo quincenal de bodega',
+    countedBy: 'u-admin',
+    createdAt: countStartAt,
+    startedAt: countStartAt,
+    completedAt: null,
+  });
+  let bodegaIdx = 0;
+  for (const inv of stores.inventory) {
+    if (bodegaIdx >= 6) break;
+    const channels = stores.inventoryStockLocation
+      .filter((l) => l.inventoryId === inv.id)
+      .reduce((sum, l) => sum + l.quantity, 0);
+    const bodega = Math.max(0, (inv.stock ?? 0) - channels);
+    if (bodega <= 0) continue;
+    bodegaIdx += 1;
+    addCountItem(
+      'ic-02',
+      inv.productId,
+      bodega,
+      bodegaIdx === 1 ? bodega : null,
+      bodegaIdx === 1 ? countStartAt : null,
+    );
+  }
+
   // ── Expenses manuales ──────────────────────────────────────────────────────
   const expenses = [
     { id: 'ft-exp-1', description: 'Alquiler local', category: 'Alquiler', amount: 300, daysAgo: 12 },
@@ -497,7 +680,7 @@ export function buildSeed(): MockStores {
       userId: 'u-admin',
       type: 'LOW_STOCK',
       title: '¡Stock bajo!',
-      message: 'El producto "Cinturón Dorado" tiene 1 unidades en stock.',
+      message: 'El producto "Aretes Cuadrado Oro Blanco" tiene 1 unidades en stock.',
       isRead: false,
       metadata: { productId: 'p-12', newStock: 1 },
       createdAt: daysAgo(1, 17, 10),
@@ -517,7 +700,7 @@ export function buildSeed(): MockStores {
       userId: 'u-admin',
       type: 'OUT_OF_STOCK',
       title: '¡Producto agotado!',
-      message: 'El producto "Blusa Bordada Artesanal" tiene 0 unidades en stock.',
+      message: 'El producto "Collar Dije Corazón Plata" tiene 0 unidades en stock.',
       isRead: true,
       metadata: { productId: 'p-06', newStock: 0 },
       createdAt: daysAgo(4, 12, 0),
@@ -527,7 +710,7 @@ export function buildSeed(): MockStores {
       userId: 'u-promo',
       type: 'LOW_STOCK',
       title: '¡Stock bajo!',
-      message: 'El producto "Shorts Denim Rotos" tiene 4 unidades en stock.',
+      message: 'El producto "Pulsera Acero Negra" tiene 4 unidades en stock.',
       isRead: false,
       metadata: { productId: 'p-09', newStock: 4 },
       createdAt: daysAgo(2, 11, 20),

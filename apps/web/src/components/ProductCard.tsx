@@ -9,6 +9,9 @@ export interface ProductItem {
   description?: string;
   salePrice: number;
   category: string;
+  material?: string | null;
+  color?: string | null;
+  shape?: string | null;
   images?: { url: string; isPrimary?: boolean }[];
   inStock?: boolean;
   stock?: number;
@@ -27,7 +30,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
   const handleWhatsAppBuy = (e: React.MouseEvent) => {
     e.stopPropagation();
     const message = encodeURIComponent(
-      `¡Hola Queen Style! Me encanta esta prenda de su catálogo: "${product.name}" (SKU: ${product.sku}) por $${product.salePrice.toFixed(2)}. ¿Tienen disponibilidad en tienda?`
+      `¡Hola Queen Style! Me interesa esta joya de su catálogo: "${product.name}" (SKU: ${product.sku}) por $${product.salePrice.toFixed(2)}. ¿Tienen disponibilidad en tienda?`
     );
     window.open(`https://wa.me/584120000000?text=${message}`, '_blank');
   };
@@ -111,6 +114,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }
           <h3 className="font-serif text-lg text-[#F8FAFC] font-semibold line-clamp-1 group-hover:text-[#E0A96D] transition-colors">
             {product.name}
           </h3>
+          {(product.material || product.color) && (
+            <div className="text-[11px] text-[#94A3B8] mt-0.5 line-clamp-1">
+              {[product.material, product.color].filter(Boolean).join(' · ')}
+            </div>
+          )}
           {product.description && (
             <p className="text-xs text-[#94A3B8] line-clamp-2 mt-1 font-light">
               {product.description}

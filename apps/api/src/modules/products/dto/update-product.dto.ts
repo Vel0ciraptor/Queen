@@ -26,10 +26,25 @@ export class UpdateProductDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-de-categoria' })
+  @ApiPropertyOptional({ example: 'uuid-de-tipo-de-joya' })
   @IsOptional()
   @IsString()
   categoryId?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-de-material' })
+  @IsOptional()
+  @IsString()
+  materialId?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-de-color' })
+  @IsOptional()
+  @IsString()
+  colorId?: string;
+
+  @ApiPropertyOptional({ example: 'uuid-de-forma' })
+  @IsOptional()
+  @IsString()
+  shapeId?: string;
 
   @ApiPropertyOptional({ example: 45.0 })
   @Type(() => Number)

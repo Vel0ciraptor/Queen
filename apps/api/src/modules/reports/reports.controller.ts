@@ -26,6 +26,12 @@ export class ReportsController {
     return this.reportsService.getTopSellingProducts(limit ? Number(limit) : undefined);
   }
 
+  @Get('best-seller-weekly')
+  @ApiOperation({ summary: 'Get the best-selling product of the last 7 days' })
+  getWeeklyBestSeller() {
+    return this.reportsService.getWeeklyBestSeller();
+  }
+
   @Get('payment-methods')
   @ApiOperation({ summary: 'Get sales breakdown by payment method' })
   getSalesByPaymentMethod() {

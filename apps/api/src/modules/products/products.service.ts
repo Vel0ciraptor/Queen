@@ -9,6 +9,12 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { QueryProductDto } from './dto/query-product.dto';
 import { MovementType, Prisma } from '@prisma/client';
+import { branchFilter } from '../../common/utils/category-tree.util';
+import {
+  SkuDimensions,
+  buildSkuPrefix,
+  nextSkuFor,
+} from '../../common/utils/sku.util';
 import { existsSync, mkdirSync, unlinkSync } from 'fs';
 import { join, basename } from 'path';
 import { randomUUID } from 'crypto';
@@ -18,28 +24,119 @@ const MAX_IMAGES_PER_PRODUCT = 5;
 const UPLOADS_DIR = join(process.cwd(), 'uploads');
 export const PRODUCTS_UPLOAD_DIR = join(UPLOADS_DIR, 'products');
 
+const DIMENSION_INCLUDE = {
+  category: true,
+  material: true,
+  color: true,
+  shape: true,
+} as const;
+
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(createProductDto: CreateProductDto) {
-    const existing = await this.prisma.product.findUnique({
-      where: { sku: createProductDto.sku },
-    });
+  // Valida que cada FK apunte a una categoría de la dimensión esperada.
+  private async assertDimensions(
+    data: { categoryId?: string; materialId?: string; colorId?: string; shapeId?: string },
+    requireAll = true,
+  ) {
+    const checks: Array<[string | undefined, string, string]> = [
+      [data.categoryId, 'TYPE', 'el tipo de joya'],
+      [data.materialId, 'MATERIAL', 'el material'],
+      [data.colorId, 'COLOR', 'el color'],
+      [data.shapeId, 'SHAPE', 'la forma'],
+    ];
 
-    if (existing) {
-      throw new ConflictException(`Ya existe un producto con el SKU ${createProductDto.sku}`);
+    for (const [id, dimension, label] of checks) {
+      if (!id) {
+        if (requireAll && dimension !== 'SHAPE') {
+          throw new BadRequestException(`Falta ${label} del producto`);
+        }
+        continue;
+      }
+      const cat = await this.prisma.category.findUnique({ where: { id } });
+      if (!cat) {
+        throw new BadRequestException(`La categoría ${label} no existe`);
+      }
+      if (cat.dimension !== dimension) {
+        throw new BadRequestException(
+          `El campo ${label} debe ser una categoría de dimensión ${dimension}`,
+        );
+      }
     }
+  }
+
+  // Carga los nombres de las dimensiones para construir el SKU.
+  private async dimensionNames(
+    client: Pick<Prisma.TransactionClient, 'category'>,
+    data: { categoryId?: string; materialId?: string; colorId?: string; shapeId?: string },
+  ): Promise<SkuDimensions> {
+    const ids = [data.categoryId, data.materialId, data.colorId, data.shapeId].filter(
+      Boolean,
+    ) as string[];
+    const categories = await client.category.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true },
+    });
+    const byId = new Map(categories.map((c) => [c.id, c.name]));
+    return {
+      tipo: byId.get(data.categoryId ?? '') ?? '',
+      material: byId.get(data.materialId ?? '') ?? '',
+      color: byId.get(data.colorId ?? '') ?? '',
+      shape: data.shapeId ? byId.get(data.shapeId) : undefined,
+    };
+  }
+
+  // Genera el SKU auto: TIPO-MATERIAL-COLOR[-FORMA]-00001 (crece solo a 6 dígitos).
+  private async generateSku(
+    client: Pick<Prisma.TransactionClient, 'category' | 'product'>,
+    data: { categoryId?: string; materialId?: string; colorId?: string; shapeId?: string },
+  ): Promise<string> {
+    const dims = await this.dimensionNames(client, data);
+    if (!dims.tipo || !dims.material || !dims.color) {
+      throw new BadRequestException('Faltan dimensiones (tipo, material o color) para generar el SKU');
+    }
+    return nextSkuFor(client, dims);
+  }
+
+  // Vista previa del próximo SKU para un conjunto de dimensiones (formularios).
+  async previewNextSku(data: {
+    categoryId: string;
+    materialId: string;
+    colorId: string;
+    shapeId?: string;
+  }) {
+    await this.assertDimensions(data);
+    const dims = await this.dimensionNames(this.prisma, data);
+    const prefix = buildSkuPrefix(dims);
+    const sku = await this.generateSku(this.prisma, data);
+    return { prefix, sku };
+  }
+
+  async create(createProductDto: CreateProductDto) {
+    await this.assertDimensions(createProductDto);
 
     const { initialStock, ...productData } = createProductDto;
 
     return this.prisma.$transaction(async (tx) => {
+      // SKU: usa el enviado o lo genera a partir de las dimensiones.
+      let sku = productData.sku?.trim() ?? '';
+      if (!sku) {
+        sku = await this.generateSku(tx, createProductDto);
+      } else {
+        const existing = await tx.product.findUnique({ where: { sku } });
+        if (existing) {
+          throw new ConflictException(`Ya existe un producto con el SKU ${sku}`);
+        }
+      }
+
       const product = await tx.product.create({
         data: {
           ...productData,
+          sku,
         },
         include: {
-          category: true,
+          ...DIMENSION_INCLUDE,
         },
       });
 
@@ -75,7 +172,7 @@ export class ProductsService {
       return tx.product.findUnique({
         where: { id: product.id },
         include: {
-          category: true,
+          ...DIMENSION_INCLUDE,
           inventory: true,
           qrCode: true,
           images: true,
@@ -88,6 +185,9 @@ export class ProductsService {
     const {
       search,
       categoryId,
+      materialId,
+      colorId,
+      shapeId,
       status,
       page = 1,
       limit = 20,
@@ -105,9 +205,16 @@ export class ProductsService {
       ];
     }
 
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
+    // Filtros por dimensión, incluyendo subcategorías de la rama seleccionada.
+    const typeIds = await branchFilter(this.prisma, categoryId ? [categoryId] : undefined);
+    const materialIds = await branchFilter(this.prisma, materialId ? [materialId] : undefined);
+    const colorIds = await branchFilter(this.prisma, colorId ? [colorId] : undefined);
+    const shapeIds = await branchFilter(this.prisma, shapeId ? [shapeId] : undefined);
+
+    if (typeIds) where.categoryId = { in: typeIds };
+    if (materialIds) where.materialId = { in: materialIds };
+    if (colorIds) where.colorId = { in: colorIds };
+    if (shapeIds) where.shapeId = { in: shapeIds };
 
     if (status) {
       where.status = status;
@@ -122,7 +229,7 @@ export class ProductsService {
         take: limit,
         orderBy: { [sortBy]: sortOrder },
         include: {
-          category: true,
+          ...DIMENSION_INCLUDE,
           inventory: true,
           images: {
             orderBy: { order: 'asc' },
@@ -148,7 +255,7 @@ export class ProductsService {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
-        category: true,
+        ...DIMENSION_INCLUDE,
         inventory: {
           include: {
             movements: {
@@ -175,7 +282,7 @@ export class ProductsService {
     const product = await this.prisma.product.findUnique({
       where: { sku },
       include: {
-        category: true,
+        ...DIMENSION_INCLUDE,
         inventory: true,
         images: true,
         qrCode: true,
@@ -205,11 +312,14 @@ export class ProductsService {
       }
     }
 
+    // Solo validar las dimensiones que se están enviando en esta actualización.
+    await this.assertDimensions(updateProductDto, false);
+
     return this.prisma.product.update({
       where: { id },
       data: updateProductDto,
       include: {
-        category: true,
+        ...DIMENSION_INCLUDE,
         inventory: true,
         images: true,
         qrCode: true,

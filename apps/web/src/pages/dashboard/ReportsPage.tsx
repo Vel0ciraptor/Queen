@@ -6,6 +6,7 @@ import {
   Users,
   Boxes,
   TrendingUp,
+  ClipboardCheck,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -24,7 +25,7 @@ import api from '../../lib/api';
 import { PageLoader } from '../../components/ui/Feedback';
 import { toast } from '../../components/ui/Toast';
 import { getApiErrorMessage } from '../../lib/errors';
-import { currency, initials } from '../../lib/format';
+import { currency, dateTime, initials } from '../../lib/format';
 
 const PIE_COLORS = ['#E0A96D', '#10B981', '#F43F5E', '#38BDF8', '#A78BFA', '#FBBF24'];
 
@@ -42,23 +43,26 @@ export const ReportsPage: React.FC = () => {
   const [payments, setPayments] = useState<any[]>([]);
   const [promoters, setPromoters] = useState<any[]>([]);
   const [valuation, setValuation] = useState<any>(null);
+  const [countStats, setCountStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [k, t, p, u, v] = await Promise.all([
+      const [k, t, p, u, v, c] = await Promise.all([
         api.get('/reports/kpis'),
         api.get('/reports/top-products', { params: { limit: 10 } }),
         api.get('/reports/payment-methods'),
         api.get('/reports/promoters'),
         api.get('/reports/inventory-valuation'),
+        api.get('/inventory/counts/stats'),
       ]);
       setKpis(k.data);
       setTop(t.data ?? []);
       setPayments(p.data ?? []);
       setPromoters(u.data ?? []);
       setValuation(v.data);
+      setCountStats(c.data);
     } catch (err) {
       toast.error(getApiErrorMessage(err, 'No se pudieron cargar los reportes'));
     } finally {
@@ -184,6 +188,111 @@ export const ReportsPage: React.FC = () => {
                 <Bar dataKey="unidades" fill="#38BDF8" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      {/* Cuadre de inventario (conteos físicos) */}
+      <div className="glass-card rounded-2xl border border-white/[0.06] p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <ClipboardCheck className="w-4 h-4 text-[#E0A96D]" />
+          <h3 className="text-sm font-serif font-bold text-white">
+            Cuadre de inventario (conteos físicos)
+          </h3>
+          <span className="text-[11px] text-slate-500 ml-auto">
+            {countStats?.lastCompletedAt
+              ? `Último conteo: ${dateTime(countStats.lastCompletedAt)}`
+              : 'Sin conteos completados'}
+          </span>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+          {[
+            {
+              label: '% de cuadre',
+              value: countStats?.matchRate != null ? `${countStats.matchRate}%` : '—',
+              tone:
+                (countStats?.matchRate ?? 100) >= 100
+                  ? 'text-emerald-400'
+                  : (countStats?.matchRate ?? 0) >= 90
+                    ? 'text-amber-400'
+                    : 'text-rose-400',
+            },
+            {
+              label: 'Conteos completados',
+              value: `${countStats?.completed ?? 0}/${countStats?.total ?? 0}`,
+              tone: 'text-white',
+            },
+            {
+              label: 'Productos contados',
+              value: String(countStats?.itemsCounted ?? 0),
+              tone: 'text-white',
+            },
+            {
+              label: 'Diferencia neta',
+              value:
+                countStats?.netDiff != null
+                  ? `${countStats.netDiff > 0 ? '+' : ''}${countStats.netDiff} uds`
+                  : '—',
+              tone: (countStats?.netDiff ?? 0) === 0 ? 'text-emerald-400' : 'text-rose-400',
+            },
+          ].map((s) => (
+            <div key={s.label} className="rounded-xl bg-white/[0.04] border border-white/[0.07] p-4">
+              <div className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">
+                {s.label}
+              </div>
+              <div className={`text-xl font-bold font-serif mt-1 ${s.tone}`}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+        {(countStats?.byLocation ?? []).length === 0 ? (
+          <div className="py-4 text-center text-xs text-slate-500">Sin datos de conteos.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table-luxury">
+              <thead>
+                <tr>
+                  <th>Ubicación</th>
+                  <th>Conteos</th>
+                  <th>Productos contados</th>
+                  <th>% Cuadre</th>
+                  <th>Diferencia neta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(countStats?.byLocation ?? []).map((loc: any) => (
+                  <tr key={loc.location}>
+                    <td className="text-sm text-white">{loc.label}</td>
+                    <td className="text-sm text-slate-300">{loc.counts}</td>
+                    <td className="text-sm text-slate-300">{loc.itemsCounted}</td>
+                    <td>
+                      {loc.matchRate == null ? (
+                        <span className="text-xs text-slate-500">—</span>
+                      ) : (
+                        <span
+                          className={`badge ${
+                            loc.matchRate >= 100
+                              ? 'badge-success'
+                              : loc.matchRate >= 90
+                                ? 'badge-warning'
+                                : 'badge-danger'
+                          }`}
+                        >
+                          {loc.matchRate}%
+                        </span>
+                      )}
+                    </td>
+                    <td
+                      className={`text-sm font-semibold ${
+                        loc.netDiff === 0 ? 'text-emerald-400' : 'text-rose-400'
+                      }`}
+                    >
+                      {loc.netDiff > 0 ? '+' : ''}
+                      {loc.netDiff} uds
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

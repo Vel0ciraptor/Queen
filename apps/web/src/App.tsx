@@ -11,11 +11,10 @@ import { NotFoundPage } from './pages/NotFoundPage';
 
 import { DashboardLayout } from './layouts/DashboardLayout';
 import { DashboardHomePage } from './pages/dashboard/DashboardHomePage';
-import { PosPage } from './pages/dashboard/PosPage';
+import { SalesPage } from './pages/dashboard/SalesPage';
 import { InventoryPage } from './pages/dashboard/InventoryPage';
 import { ProductsPage } from './pages/dashboard/ProductsPage';
 import { CategoriesPage } from './pages/dashboard/CategoriesPage';
-import { OrdersPage } from './pages/dashboard/OrdersPage';
 import { QrPage } from './pages/dashboard/QrPage';
 import { FinancePage } from './pages/dashboard/FinancePage';
 import { ReportsPage } from './pages/dashboard/ReportsPage';
@@ -38,11 +37,12 @@ export const App: React.FC = () => {
         <Route element={<RequireAuth />}>
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardHomePage />} />
-            <Route path="pos" element={<PosPage />} />
+            <Route path="sales" element={<SalesPage />} />
+            <Route path="pos" element={<Navigate to="/dashboard/sales" replace />} />
+            <Route path="orders" element={<Navigate to="/dashboard/sales?tab=orders" replace />} />
             <Route path="inventory" element={<InventoryPage />} />
             <Route path="products" element={<ProductsPage />} />
             <Route path="categories" element={<CategoriesPage />} />
-            <Route path="orders" element={<OrdersPage />} />
             <Route path="qr" element={<QrPage />} />
 
             <Route element={<RequireRole roles={ADMIN} />}>

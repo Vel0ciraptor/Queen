@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { CategoryDimension } from '@prisma/client';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -32,10 +33,23 @@ export class CategoriesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all categories' })
+  @ApiOperation({ summary: 'List all categories (optionally filtered by dimension)' })
   @ApiQuery({ name: 'includeInactive', required: false, type: Boolean })
-  findAll(@Query('includeInactive') includeInactive?: string) {
-    return this.categoriesService.findAll(includeInactive === 'true');
+  @ApiQuery({
+    name: 'dimension',
+    required: false,
+    enum: ['TYPE', 'MATERIAL', 'COLOR', 'SHAPE'],
+  })
+  findAll(
+    @Query('includeInactive') includeInactive?: string,
+    @Query('dimension') dimension?: string,
+  ) {
+    return this.categoriesService.findAll(
+      includeInactive === 'true',
+      dimension && dimension in CategoryDimension
+        ? (dimension as CategoryDimension)
+        : undefined,
+    );
   }
 
   @Get(':id')

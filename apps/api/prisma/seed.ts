@@ -36,24 +36,56 @@ async function main() {
 
   console.log(`✅ Users created: Admin (${admin.email}), Promotora (${promotora.email})`);
 
-  // 2. Create Categories
-  const categoriesData = [
-    { name: 'Vestidos de Gala', description: 'Vestidos largos elegantes para fiestas y ocasiones especiales' },
-    { name: 'Conjuntos & Trajes', description: 'Conjuntos de dos piezas de alta costura y sastre femenino' },
-    { name: 'Blusas & Tops', description: 'Tops de satén, lino y seda para cualquier ocasión' },
-    { name: 'Pantalones & Faldas', description: 'Pantalones palazzo, faldas midi y plisadas de temporada' },
-    { name: 'Accesorios & Joyería', description: 'Carteras de fiesta, collares y complementos exclusivos' },
+  // 2. Create Categories (por dimensión, con subcategorías)
+  type SeedCat = { name: string; dimension: 'TYPE' | 'MATERIAL' | 'COLOR' | 'SHAPE'; parent?: string; description?: string };
+  const categoriesData: SeedCat[] = [
+    // ── TIPO ──
+    { name: 'Anillos', dimension: 'TYPE', description: 'Anillos de fantasía y compromiso' },
+    { name: 'Anillos de compromiso', dimension: 'TYPE', parent: 'Anillos', description: 'Anillos con piedra central' },
+    { name: 'Alianzas', dimension: 'TYPE', parent: 'Anillos', description: 'Alianzas de boda' },
+    { name: 'Collares', dimension: 'TYPE', description: 'Collares y cadenas' },
+    { name: 'Pulseras', dimension: 'TYPE', description: 'Pulseras y manillas' },
+    { name: 'Aretes', dimension: 'TYPE', description: 'Aretes y pendientes' },
+    { name: 'Dijes', dimension: 'TYPE', description: 'Dijes y colgantes' },
+    // ── MATERIAL ──
+    { name: 'Oro', dimension: 'MATERIAL', description: 'Joyas de oro' },
+    { name: 'Oro 18k', dimension: 'MATERIAL', parent: 'Oro', description: 'Oro 18 quilates' },
+    { name: 'Oro 14k', dimension: 'MATERIAL', parent: 'Oro', description: 'Oro 14 quilates' },
+    { name: 'Plata', dimension: 'MATERIAL', description: 'Plata de ley' },
+    { name: 'Oro blanco', dimension: 'MATERIAL', description: 'Oro blanco' },
+    { name: 'Acero', dimension: 'MATERIAL', description: 'Acero inoxidable' },
+    // ── COLOR ──
+    { name: 'Dorado', dimension: 'COLOR', description: 'Color dorado' },
+    { name: 'Plateado', dimension: 'COLOR', description: 'Color plateado' },
+    { name: 'Rosa', dimension: 'COLOR', description: 'Rosa / oro rosa' },
+    { name: 'Negro', dimension: 'COLOR', description: 'Color negro' },
+    { name: 'Blanco', dimension: 'COLOR', description: 'Color blanco' },
+    // ── FORMA (opcional) ──
+    { name: 'Redondo', dimension: 'SHAPE', description: 'Forma redonda' },
+    { name: 'Corazón', dimension: 'SHAPE', description: 'Forma de corazón' },
+    { name: 'Estrella', dimension: 'SHAPE', description: 'Forma de estrella' },
+    { name: 'Cuadrado', dimension: 'SHAPE', description: 'Forma cuadrada' },
   ];
 
-  const categoryMap = new Map<string, string>();
+  const categoryMap = new Map<string, string>(); // "dimension:name" -> id
 
-  for (const cat of categoriesData) {
-    const created = await prisma.category.upsert({
-      where: { name: cat.name },
-      update: {},
-      create: cat,
-    });
-    categoryMap.set(cat.name, created.id);
+  // Crear primero las raíz, luego las hijas (para resolver parentId).
+  for (const pass of [0, 1]) {
+    for (const cat of categoriesData) {
+      const isChild = !!cat.parent;
+      if ((pass === 0 && isChild) || (pass === 1 && !isChild)) continue;
+
+      const parentId = cat.parent ? categoryMap.get(`${cat.dimension}:${cat.parent}`)! : null;
+      const existing = await prisma.category.findFirst({
+        where: { name: cat.name, dimension: cat.dimension, parentId },
+      });
+      const created =
+        existing ??
+        (await prisma.category.create({
+          data: { name: cat.name, dimension: cat.dimension, parentId, description: cat.description },
+        }));
+      categoryMap.set(`${cat.dimension}:${cat.name}`, created.id);
+    }
   }
 
   console.log(`✅ ${categoriesData.length} Categories created`);
@@ -61,87 +93,60 @@ async function main() {
   // 3. Create Products with Inventory, QR Codes, and Images
   const productsData = [
     {
-      sku: 'QS-DRS-001',
-      name: 'Vestido Imperial Escarlata',
-      description: 'Vestido largo en satén de seda escarlata con escote drapeado y corte sirena.',
-      category: 'Vestidos de Gala',
-      costPrice: 42.00,
-      salePrice: 89.99,
-      stockMin: 3,
-      stock: 15,
-      images: [
-        'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&auto=format&fit=crop',
-      ],
+      sku: 'QS-ANL-001',
+      name: 'Anillo Solitario Oro 18k',
+      description: 'Anillo solitario con piedra central, oro 18k. Ideal para compromisos.',
+      type: 'Anillos de compromiso', material: 'Oro 18k', color: 'Dorado', shape: 'Redondo',
+      costPrice: 120.00, salePrice: 280.00, stockMin: 3, stock: 10,
+      images: ['https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=800&auto=format&fit=crop'],
     },
     {
-      sku: 'QS-DRS-002',
-      name: 'Vestido Noche Esmeralda',
-      description: 'Vestido de noche en terciopelo verde esmeralda con abertura lateral y espalda descubierta.',
-      category: 'Vestidos de Gala',
-      costPrice: 48.00,
-      salePrice: 110.00,
-      stockMin: 2,
-      stock: 8,
-      images: [
-        'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=800&auto=format&fit=crop',
-      ],
+      sku: 'QS-ANL-002',
+      name: 'Anillo Compromiso Corazón',
+      description: 'Anillo de compromiso con piedra en forma de corazón, oro 18k.',
+      type: 'Anillos de compromiso', material: 'Oro 18k', color: 'Dorado', shape: 'Corazón',
+      costPrice: 150.00, salePrice: 340.00, stockMin: 2, stock: 6,
+      images: ['https://images.unsplash.com/photo-1603561591411-07134e71a2a9?w=800&auto=format&fit=crop'],
     },
     {
-      sku: 'QS-SET-001',
-      name: 'Conjunto Sastre Perla',
-      description: 'Conjunto blazer entallado y pantalón palazzo en lino blanco marfil con botones dorados.',
-      category: 'Conjuntos & Trajes',
-      costPrice: 55.00,
-      salePrice: 125.00,
-      stockMin: 4,
-      stock: 12,
-      images: [
-        'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?w=800&auto=format&fit=crop',
-      ],
+      sku: 'QS-COL-002',
+      name: 'Collar Dije Corazón Plata',
+      description: 'Collar de plata con dije de corazón. Pieza delicada y moderna.',
+      type: 'Collares', material: 'Plata', color: 'Plateado', shape: 'Corazón',
+      costPrice: 35.00, salePrice: 85.00, stockMin: 4, stock: 14,
+      images: ['https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&auto=format&fit=crop'],
     },
     {
-      sku: 'QS-TOP-001',
-      name: 'Blusa Drapeada Rosa Gold',
-      description: 'Blusa en gasa fina con textura metalizada y cuello halter satinado.',
-      category: 'Blusas & Tops',
-      costPrice: 18.00,
-      salePrice: 38.50,
-      stockMin: 5,
-      stock: 20,
-      images: [
-        'https://images.unsplash.com/photo-1604014237800-1c9102c219da?w=800&auto=format&fit=crop',
-      ],
+      sku: 'QS-PUL-001',
+      name: 'Pulsera Eslabones Oro 18k',
+      description: 'Pulsera de eslabones en oro 18k, hebillón seguro.',
+      type: 'Pulseras', material: 'Oro 18k', color: 'Dorado', shape: undefined,
+      costPrice: 130.00, salePrice: 300.00, stockMin: 2, stock: 7,
+      images: ['https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=800&auto=format&fit=crop'],
     },
     {
-      sku: 'QS-SKT-001',
-      name: 'Falda Plisada Champagne',
-      description: 'Falda midi de corte evasé plisado en satén brillante color champagne.',
-      category: 'Pantalones & Faldas',
-      costPrice: 22.00,
-      salePrice: 49.00,
-      stockMin: 3,
-      stock: 4, // low stock trigger
-      images: [
-        'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop',
-      ],
+      sku: 'QS-ART-001',
+      name: 'Aretes Estrella Oro 14k',
+      description: 'Aretes en forma de estrella en oro 14k, cierre de presión.',
+      type: 'Aretes', material: 'Oro 14k', color: 'Dorado', shape: 'Estrella',
+      costPrice: 55.00, salePrice: 130.00, stockMin: 3, stock: 8,
+      images: ['https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=800&auto=format&fit=crop'],
     },
     {
-      sku: 'QS-ACC-001',
-      name: 'Clutch Joya Midnight',
-      description: 'Cartera de mano rígida con incrustaciones de cristales y cadena dorada desmontable.',
-      category: 'Accesorios & Joyería',
-      costPrice: 15.00,
-      salePrice: 35.00,
-      stockMin: 2,
-      stock: 18,
-      images: [
-        'https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=800&auto=format&fit=crop',
-      ],
+      sku: 'QS-ART-003',
+      name: 'Aretes Cuadrado Oro Blanco',
+      description: 'Aretes cuadrados en oro blanco, diseño geométrico.',
+      type: 'Aretes', material: 'Oro blanco', color: 'Blanco', shape: 'Cuadrado',
+      costPrice: 65.00, salePrice: 150.00, stockMin: 2, stock: 5, // low stock trigger
+      images: ['https://images.unsplash.com/photo-1588444650733-d0767b753fc8?w=800&auto=format&fit=crop'],
     },
   ];
 
   for (const item of productsData) {
-    const categoryId = categoryMap.get(item.category)!;
+    const categoryId = categoryMap.get(`TYPE:${item.type}`)!;
+    const materialId = categoryMap.get(`MATERIAL:${item.material}`)!;
+    const colorId = categoryMap.get(`COLOR:${item.color}`)!;
+    const shapeId = item.shape ? categoryMap.get(`SHAPE:${item.shape}`)! : null;
 
     const existingProduct = await prisma.product.findUnique({
       where: { sku: item.sku },
@@ -154,6 +159,9 @@ async function main() {
           name: item.name,
           description: item.description,
           categoryId,
+          materialId,
+          colorId,
+          shapeId,
           costPrice: item.costPrice,
           salePrice: item.salePrice,
           stockMin: item.stockMin,

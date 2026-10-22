@@ -11,9 +11,11 @@ import {
   PaymentStatus,
   Prisma,
   SaleStatus,
+  StockLocation,
   TransactionType,
   NotificationType,
 } from '@prisma/client';
+import { applyStockDelta } from '../../common/utils/stock-location.util';
 
 @Injectable()
 export class SalesService {
@@ -101,18 +103,28 @@ export class SalesService {
 
       // 3. Update inventory & record movements & check stock alerts
       for (const pi of preparedItems) {
-        const newStock = pi.currentStock - pi.quantity;
-
-        await tx.inventory.update({
-          where: { id: pi.inventoryId },
-          data: { stock: newStock },
-        });
+        // Descuenta del total y drena primero las ubicaciones (Tienda → Online → Live)
+        const deltaResult = await applyStockDelta(
+          tx,
+          { id: pi.inventoryId, stock: pi.currentStock },
+          -pi.quantity,
+          {
+            drainMode: 'channels-first',
+            channelPriority: [
+              StockLocation.TIENDA,
+              StockLocation.ONLINE,
+              StockLocation.LIVE,
+            ],
+          },
+        );
+        const newStock = deltaResult.newStock;
 
         await tx.inventoryMovement.create({
           data: {
             inventoryId: pi.inventoryId,
             type: MovementType.SALE,
             quantity: pi.quantity,
+            fromLocation: deltaResult.origin ?? undefined,
             reference: `Venta #${sale.id.slice(0, 8)}`,
             notes: `Venta directa realizada por usuario`,
             createdBy: userId,
@@ -263,9 +275,8 @@ export class SalesService {
         });
 
         if (inventory) {
-          await tx.inventory.update({
-            where: { id: inventory.id },
-            data: { stock: inventory.stock + item.quantity },
+          const restoreResult = await applyStockDelta(tx, inventory, item.quantity, {
+            addDestination: StockLocation.BODEGA,
           });
 
           await tx.inventoryMovement.create({
@@ -273,6 +284,7 @@ export class SalesService {
               inventoryId: inventory.id,
               type: MovementType.RETURN,
               quantity: item.quantity,
+              location: restoreResult.destination ?? undefined,
               reference: `Cancelación Venta #${sale.id.slice(0, 8)}`,
               notes: reason || 'Devolución de stock por venta cancelada',
               createdBy: userId,

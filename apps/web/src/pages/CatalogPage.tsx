@@ -10,6 +10,7 @@ import {
   MessageCircle,
   ShieldCheck,
   Truck,
+  SlidersHorizontal,
 } from 'lucide-react';
 import api from '../lib/api';
 import { useCartStore } from '../store/cartStore';
@@ -17,81 +18,33 @@ import { useCartStore } from '../store/cartStore';
 export const CatalogPage: React.FC = () => {
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [filters, setFilters] = useState({
+    categoryId: '',
+    materialId: '',
+    colorId: '',
+    shapeId: '',
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [quickViewProduct, setQuickViewProduct] = useState<ProductItem | null>(null);
 
   const addItem = useCartStore((s) => s.addItem);
 
-  // Initial fallback mock data for instant display
-  const defaultProducts: ProductItem[] = [
-    {
-      id: 'p1',
-      sku: 'QS-DRS-001',
-      name: 'Vestido Imperial Escarlata',
-      description: 'Vestido largo en satén de seda escarlata con escote drapeado y corte sirena exclusivo.',
-      salePrice: 89.99,
-      category: 'Vestidos de Gala',
-      stock: 15,
-      images: [{ url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=800&auto=format&fit=crop' }],
-    },
-    {
-      id: 'p2',
-      sku: 'QS-DRS-002',
-      name: 'Vestido Noche Esmeralda',
-      description: 'Vestido de noche en terciopelo verde esmeralda con abertura lateral y espalda descubierta.',
-      salePrice: 110.0,
-      category: 'Vestidos de Gala',
-      stock: 8,
-      images: [{ url: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?w=800&auto=format&fit=crop' }],
-    },
-    {
-      id: 'p3',
-      sku: 'QS-SET-001',
-      name: 'Conjunto Sastre Perla',
-      description: 'Conjunto blazer entallado y pantalón palazzo en lino blanco marfil con botones dorados.',
-      salePrice: 125.0,
-      category: 'Conjuntos & Trajes',
-      stock: 12,
-      images: [{ url: 'https://images.unsplash.com/photo-1584273143981-41c073dfe8f8?w=800&auto=format&fit=crop' }],
-    },
-    {
-      id: 'p4',
-      sku: 'QS-TOP-001',
-      name: 'Blusa Drapeada Rosa Gold',
-      description: 'Blusa en gasa fina con textura metalizada y cuello halter satinado.',
-      salePrice: 38.5,
-      category: 'Blusas & Tops',
-      stock: 20,
-      images: [{ url: 'https://images.unsplash.com/photo-1604014237800-1c9102c219da?w=800&auto=format&fit=crop' }],
-    },
-    {
-      id: 'p5',
-      sku: 'QS-SKT-001',
-      name: 'Falda Plisada Champagne',
-      description: 'Falda midi de corte evasé plisado en satén brillante color champagne.',
-      salePrice: 49.0,
-      category: 'Pantalones & Faldas',
-      stock: 4,
-      images: [{ url: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=800&auto=format&fit=crop' }],
-    },
-    {
-      id: 'p6',
-      sku: 'QS-ACC-001',
-      name: 'Clutch Joya Midnight',
-      description: 'Cartera de mano rígida con incrustaciones de cristales y cadena dorada desmontable.',
-      salePrice: 35.0,
-      category: 'Accesorios & Joyería',
-      stock: 18,
-      images: [{ url: 'https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=800&auto=format&fit=crop' }],
-    },
+  const DIMENSIONS: Array<{ key: keyof typeof filters; label: string }> = [
+    { key: 'categoryId', label: 'Tipo' },
+    { key: 'materialId', label: 'Material' },
+    { key: 'colorId', label: 'Color' },
+    { key: 'shapeId', label: 'Forma' },
   ];
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   useEffect(() => {
     fetchData();
-  }, [selectedCategory, searchQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, searchQuery]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -100,44 +53,32 @@ export const CatalogPage: React.FC = () => {
         api.get('/catalog/categories'),
         api.get('/catalog/products', {
           params: {
-            categoryId: selectedCategory || undefined,
+            categoryId: filters.categoryId || undefined,
+            materialId: filters.materialId || undefined,
+            colorId: filters.colorId || undefined,
+            shapeId: filters.shapeId || undefined,
             search: searchQuery || undefined,
           },
         }),
       ]);
 
-      setCategories(catsRes.data);
-      if (prodsRes.data && prodsRes.data.length > 0) {
-        setProducts(prodsRes.data);
-      } else if (!selectedCategory && !searchQuery) {
-        setProducts(defaultProducts);
-      } else {
-        setProducts(prodsRes.data);
-      }
+      setCategories(Array.isArray(catsRes.data) ? catsRes.data : []);
+      setProducts(prodsRes.data ?? []);
     } catch {
-      // Fallback local filtering for mock
-      let filtered = [...defaultProducts];
-      if (selectedCategory) {
-        filtered = filtered.filter((p) => p.category === selectedCategory);
-      }
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        filtered = filtered.filter(
-          (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
-        );
-      }
-      setProducts(filtered);
-      setCategories([
-        { id: '1', name: 'Vestidos de Gala' },
-        { id: '2', name: 'Conjuntos & Trajes' },
-        { id: '3', name: 'Blusas & Tops' },
-        { id: '4', name: 'Pantalones & Faldas' },
-        { id: '5', name: 'Accesorios & Joyería' },
-      ]);
+      setProducts([]);
     } finally {
       setLoading(false);
     }
   };
+
+  const setFilter = (key: keyof typeof filters, id: string) =>
+    setFilters((f) => ({ ...f, [key]: f[key] === id ? '' : id }));
+
+  // Categorías por dimensión, ordenadas por uso.
+  const byDim = (dim: string) =>
+    categories
+      .filter((c) => c.dimension === dim)
+      .sort((a, b) => (b.productCount ?? 0) - (a.productCount ?? 0));
 
   return (
     <div className="min-h-screen bg-[#0A0A0F] text-[#F8FAFC]">
@@ -153,11 +94,11 @@ export const CatalogPage: React.FC = () => {
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-serif font-bold text-white tracking-tight leading-tight">
-              Elegancia que define tu <span className="gold-text">Corona</span>.
+              Joyas que definen tu <span className="gold-text">Corona</span>.
             </h1>
 
             <p className="text-base sm:text-lg text-slate-400 font-light max-w-xl mx-auto lg:mx-0">
-              Prendas de alta costura, vestidos de gala y conjuntos exclusivos diseñados para resaltar tu distinción en cada ocasión.
+              Anillos, collares, pulseras y aretes en oro, plata y acero. Encuentra la pieza perfecta filtrando por tipo, material, color y forma.
             </p>
 
             <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
@@ -193,7 +134,7 @@ export const CatalogPage: React.FC = () => {
                 <span className="text-xs text-[#E0A96D] uppercase tracking-widest font-mono">
                   Edición Limitada
                 </span>
-                <h4 className="font-serif text-xl font-bold text-white">Vestido Imperial</h4>
+                <h4 className="font-serif text-xl font-bold text-white">Anillo Solitario</h4>
               </div>
             </div>
 
@@ -211,8 +152,8 @@ export const CatalogPage: React.FC = () => {
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h5 className="text-sm font-bold text-white">Garantía de Calidad</h5>
-              <p className="text-xs text-slate-400">Telas finas y confección premium</p>
+              <h5 className="text-sm font-bold text-white">Joyas Certificadas</h5>
+              <p className="text-xs text-slate-400">Oro, plata y acero de calidad garantizada</p>
             </div>
           </div>
           <div className="flex items-center justify-center sm:justify-start gap-4">
@@ -237,56 +178,147 @@ export const CatalogPage: React.FC = () => {
       </section>
 
       {/* Main Catalog Section */}
-      <section id="catalog-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-10">
-        {/* Controls: Search and Filter Pills */}
-        <div className="flex flex-col md:flex-row gap-6 items-center justify-between">
-          {/* Category Tabs */}
-          <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none">
+      <section id="catalog-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-8">
+        {/* Controls: count + Filters toggle + Search */}
+        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex items-center gap-3 text-xs text-slate-400">
+            <Sparkles className="w-4 h-4 text-[#E0A96D]" />
+            <span>
+              {products.length} {products.length === 1 ? 'joya disponible' : 'joyas disponibles'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 w-full md:w-auto">
+            {/* Filters toggle */}
             <button
-              onClick={() => setSelectedCategory(null)}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                selectedCategory === null
+              onClick={() => setIsFilterOpen((o) => !o)}
+              className={`relative flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 ${
+                isFilterOpen || activeFilterCount > 0
                   ? 'bg-[#E0A96D] text-[#12121C] shadow-lg shadow-[#E0A96D]/20'
                   : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] border border-white/[0.06]'
               }`}
             >
-              Todas las Colecciones
+              <SlidersHorizontal className="w-4 h-4" />
+              Filtros
+              {activeFilterCount > 0 && (
+                <span className="ml-0.5 w-5 h-5 rounded-full bg-[#12121C] text-[#E0A96D] text-[10px] font-bold flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id || cat.name}
-                onClick={() => setSelectedCategory(cat.name)}
-                className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
-                  selectedCategory === cat.name
-                    ? 'bg-[#E0A96D] text-[#12121C] shadow-lg shadow-[#E0A96D]/20'
-                    : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] border border-white/[0.06]'
-                }`}
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
 
-          {/* Search Box */}
-          <div className="relative w-full md:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre o SKU..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-luxury text-xs pl-10 pr-4 py-2.5 rounded-xl w-full"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
+            {/* Search Box */}
+            <div className="relative w-full md:w-72">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre o SKU..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="input-luxury text-xs pl-10 pr-4 py-2.5 rounded-xl w-full"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Active filter chips (visible cuando el panel está cerrado) */}
+        {!isFilterOpen && activeFilterCount > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            {DIMENSIONS.filter((d) => filters[d.key]).map((d) => {
+              const cat = categories.find((c) => c.id === filters[d.key]);
+              return (
+                <button
+                  key={d.key}
+                  onClick={() => setFilter(d.key, filters[d.key])}
+                  className="group flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-lg bg-[#E0A96D]/10 border border-[#E0A96D]/30 text-[11px] font-semibold text-[#F7D794] hover:bg-[#E0A96D]/20 transition-colors"
+                >
+                  <span className="text-slate-400 font-normal">{d.label}:</span>
+                  {cat?.name ?? '—'}
+                  <X className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+                </button>
+              );
+            })}
+            <button
+              onClick={() => setFilters({ categoryId: '', materialId: '', colorId: '', shapeId: '' })}
+              className="text-[11px] font-semibold text-slate-400 hover:text-white px-1 transition-colors"
+            >
+              Limpiar todo
+            </button>
+          </div>
+        )}
+
+        {/* Per-dimension filter pill groups (solo cuando se abre el panel) */}
+        {isFilterOpen && (
+          <div className="glass-card rounded-2xl border border-white/[0.06] p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-white">Filtrar joyas</span>
+              <div className="flex items-center gap-3">
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => setFilters({ categoryId: '', materialId: '', colorId: '', shapeId: '' })}
+                    className="text-[11px] font-semibold text-slate-400 hover:text-white transition-colors"
+                  >
+                    Limpiar filtros
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsFilterOpen(false)}
+                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {DIMENSIONS.map((dim) => {
+                const options = byDim(
+                  dim.key === 'categoryId' ? 'TYPE' : dim.key === 'materialId' ? 'MATERIAL' : dim.key === 'colorId' ? 'COLOR' : 'SHAPE',
+                );
+                if (options.length === 0) return null;
+                const active = filters[dim.key];
+                return (
+                  <div key={dim.key} className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <span className="text-[11px] uppercase tracking-wider text-slate-500 font-semibold w-20 shrink-0">
+                      {dim.label}
+                    </span>
+                    <div className="flex items-center gap-2 overflow-x-auto w-full pb-1 scrollbar-none">
+                      {options.map((cat) => {
+                        const isActive = active === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            onClick={() => setFilter(dim.key, cat.id)}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+                              isActive
+                                ? 'bg-[#E0A96D] text-[#12121C] shadow-lg shadow-[#E0A96D]/20'
+                                : 'bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] border border-white/[0.06]'
+                            }`}
+                          >
+                            {cat.name}
+                            {cat.productCount != null && (
+                              <span className={`ml-1.5 text-[10px] ${isActive ? 'text-[#12121C]/60' : 'text-slate-500'}`}>
+                                {cat.productCount}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Product Grid */}
         {loading ? (
@@ -298,8 +330,8 @@ export const CatalogPage: React.FC = () => {
         ) : products.length === 0 ? (
           <div className="text-center py-20 text-slate-400 space-y-3">
             <ShoppingBag className="w-12 h-12 text-slate-600 mx-auto" />
-            <h3 className="font-serif text-xl font-semibold text-white">No se encontraron productos</h3>
-            <p className="text-xs text-slate-500">Intenta cambiar la categoría o término de búsqueda.</p>
+            <h3 className="font-serif text-xl font-semibold text-white">No se encontraron joyas</h3>
+            <p className="text-xs text-slate-500">Prueba cambiando los filtros o el término de búsqueda.</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -347,8 +379,22 @@ export const CatalogPage: React.FC = () => {
                   <h2 className="font-serif text-2xl font-bold text-white mt-2">
                     {quickViewProduct.name}
                   </h2>
-                  <div className="text-xs text-slate-400 uppercase tracking-widest mt-1">
-                    {quickViewProduct.category}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                    {[
+                      quickViewProduct.category,
+                      quickViewProduct.material,
+                      quickViewProduct.color,
+                      quickViewProduct.shape,
+                    ]
+                      .filter(Boolean)
+                      .map((tag, i) => (
+                        <span
+                          key={i}
+                          className="text-[11px] text-slate-300 bg-white/[0.05] border border-white/[0.06] px-2 py-0.5 rounded-md"
+                        >
+                          {tag}
+                        </span>
+                      ))}
                   </div>
                 </div>
 
@@ -357,7 +403,7 @@ export const CatalogPage: React.FC = () => {
                 </div>
 
                 <p className="text-xs text-slate-300 leading-relaxed font-light">
-                  {quickViewProduct.description || 'Prenda exclusiva de alta costura confeccionada con los más altos estándares.'}
+                  {quickViewProduct.description || 'Pieza exclusiva elaborada con los más altos estándares de joyería.'}
                 </p>
 
                 <div className="pt-4 border-t border-white/10 space-y-3">

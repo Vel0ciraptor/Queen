@@ -24,6 +24,9 @@ interface DetailProduct {
   stock?: number;
   inventory?: { stock: number; lowStockThreshold?: number };
   category?: { id: string; name: string };
+  material?: { id: string; name: string } | null;
+  color?: { id: string; name: string } | null;
+  shape?: { id: string; name: string } | null;
   images?: { id?: string; url: string; isPrimary?: boolean }[];
 }
 
@@ -163,9 +166,23 @@ export const ProductDetailPage: React.FC = () => {
                 {product.sku}
               </span>
               <h1 className="font-serif text-3xl font-bold text-white mt-3">{product.name}</h1>
-              {product.category && (
-                <div className="text-xs text-slate-500 uppercase tracking-widest mt-1">
-                  {product.category.name}
+              {(product.category || product.material || product.color || product.shape) && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                  {[
+                    product.category?.name,
+                    product.material?.name,
+                    product.color?.name,
+                    product.shape?.name,
+                  ]
+                    .filter(Boolean)
+                    .map((tag, i) => (
+                      <span
+                        key={i}
+                        className="text-[11px] text-slate-300 bg-white/[0.05] border border-white/[0.06] px-2 py-0.5 rounded-md"
+                      >
+                        {tag}
+                      </span>
+                    ))}
                 </div>
               )}
             </div>

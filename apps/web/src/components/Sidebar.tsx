@@ -3,10 +3,9 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   ShoppingCart,
   Package,
-  ListOrdered,
   DollarSign,
   BarChart3,
-  QrCode,
+  ScanBarcode,
   Users,
   Crown,
   LogOut,
@@ -30,12 +29,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
   };
 
   const navItems = [
-    { to: '/dashboard/pos', label: 'Punto de Venta (POS)', icon: ShoppingCart, roles: ['ADMIN', 'PROMOTORA'] },
+    { to: '/dashboard/sales', label: 'Ventas', icon: ShoppingCart, roles: ['ADMIN', 'PROMOTORA'] },
     { to: '/dashboard/inventory', label: 'Inventario & Stock', icon: Package, roles: ['ADMIN', 'PROMOTORA'] },
     { to: '/dashboard/products', label: 'Productos', icon: Tag, roles: ['ADMIN', 'PROMOTORA'] },
     { to: '/dashboard/categories', label: 'Categorías', icon: FolderTree, roles: ['ADMIN', 'PROMOTORA'] },
-    { to: '/dashboard/orders', label: 'Pedidos Web', icon: ListOrdered, roles: ['ADMIN', 'PROMOTORA'] },
-    { to: '/dashboard/qr', label: 'Etiquetas & QR', icon: QrCode, roles: ['ADMIN', 'PROMOTORA'] },
+    { to: '/dashboard/qr', label: 'Etiquetas', icon: ScanBarcode, roles: ['ADMIN', 'PROMOTORA'] },
     { to: '/dashboard/finance', label: 'Finanzas & Caja', icon: DollarSign, roles: ['ADMIN'] },
     { to: '/dashboard/reports', label: 'Reportes & KPIs', icon: BarChart3, roles: ['ADMIN'] },
     { to: '/dashboard/users', label: 'Equipo & Usuarios', icon: Users, roles: ['ADMIN'] },

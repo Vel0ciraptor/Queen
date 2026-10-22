@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Search,
-  QrCode,
+  ScanBarcode,
   Plus,
   Minus,
   Trash2,
@@ -13,7 +13,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import api from '../../lib/api';
-import { QrScannerModal } from '../../components/QrScannerModal';
+import { BarcodeScannerModal } from '../../components/BarcodeScannerModal';
 import { Modal } from '../../components/ui/Modal';
 import { PageLoader, Spinner } from '../../components/ui/Feedback';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
@@ -250,10 +250,10 @@ export const PosPage: React.FC = () => {
             <button
               onClick={() => setIsScannerOpen(true)}
               className="btn-secondary px-4 text-sm shrink-0"
-              title="Escanear QR"
+              title="Escanear código de barras"
             >
-              <QrCode className="w-4 h-4" />
-              <span className="hidden sm:inline">Escanear QR</span>
+              <ScanBarcode className="w-4 h-4" />
+              <span className="hidden sm:inline">Escanear código</span>
             </button>
           </div>
 
@@ -312,7 +312,7 @@ export const PosPage: React.FC = () => {
           {cart.length === 0 ? (
             <div className="py-12 text-center">
               <ShoppingBag className="w-8 h-8 text-slate-600 mx-auto mb-3" />
-              <p className="text-sm text-slate-500">Busca un producto o escanea su QR para comenzar.</p>
+              <p className="text-sm text-slate-500">Busca un producto o escanea su código de barras para comenzar.</p>
             </div>
           ) : (
             <div className="divide-y divide-white/[0.05]">
@@ -557,8 +557,8 @@ export const PosPage: React.FC = () => {
         </div>
       </div>
 
-      {/* QR Scanner */}
-      <QrScannerModal
+      {/* Barcode Scanner */}
+      <BarcodeScannerModal
         isOpen={isScannerOpen}
         onClose={() => setIsScannerOpen(false)}
         onProductFound={(product) => addToCart(product, product.inventory?.stock)}

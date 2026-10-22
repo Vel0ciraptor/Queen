@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Trash2, Plus, Minus, ShoppingBag, Send, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ShoppingBag, Send, ArrowRight, CheckCircle2, Store, Truck } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import api from '../lib/api';
 
@@ -13,6 +13,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [fulfillment, setFulfillment] = useState<'PICKUP' | 'DELIVERY'>('PICKUP');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,13 +26,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerName.trim() || items.length === 0) return;
+    if (fulfillment === 'DELIVERY' && !address.trim()) return;
 
     setIsSubmitting(true);
     try {
       const orderPayload = {
         customerName,
         customerPhone,
-        deliveryAddress: address,
+        fulfillmentType: fulfillment,
+        deliveryAddress: fulfillment === 'DELIVERY' ? address : undefined,
         notes,
         items: items.map((i) => ({
           productId: i.id,
@@ -53,7 +56,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
         `*Pedido:* #${createdOrder.id?.slice(0, 8) || 'NUEVO'}\n` +
         `*Cliente:* ${customerName}\n` +
         `*Teléfono:* ${customerPhone || 'N/A'}\n` +
-        `*Dirección:* ${address || 'Retiro en Boutique'}\n\n` +
+        `*Entrega:* ${fulfillment === 'DELIVERY' ? `Delivery — ${address || 'dirección a confirmar'}` : 'Retiro en tienda'}\n\n` +
         `*Detalle de Productos:*\n${itemsListText}\n\n` +
         `*Total a Pagar:* *$${total.toFixed(2)}*\n` +
         (notes ? `*Notas:* ${notes}\n\n` : '\n') +
@@ -75,7 +78,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
         `👑 *NUEVO PEDIDO — QUEEN STYLE* 👑\n\n` +
         `*Cliente:* ${customerName}\n` +
         `*Teléfono:* ${customerPhone || 'N/A'}\n` +
-        `*Dirección:* ${address || 'Retiro en Boutique'}\n\n` +
+        `*Entrega:* ${fulfillment === 'DELIVERY' ? `Delivery — ${address || 'dirección a confirmar'}` : 'Retiro en tienda'}\n\n` +
         `*Detalle:*\n${itemsListText}\n\n` +
         `*Total:* *$${total.toFixed(2)}*\n\n` +
         `¡Hola! Deseo ordenar estas prendas de su catálogo.`
@@ -252,17 +255,46 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose }) => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1">
-                    Dirección de entrega (o retiro en tienda)
+                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                    ¿Cómo quieres recibir tu pedido? *
                   </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Calle, edificio, apartamento, ciudad..."
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="input-luxury text-sm resize-none"
-                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { value: 'PICKUP', label: 'Retiro en tienda', icon: Store },
+                      { value: 'DELIVERY', label: 'Delivery', icon: Truck },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setFulfillment(opt.value as 'PICKUP' | 'DELIVERY')}
+                        className={`p-3 rounded-xl border text-sm font-semibold flex flex-col items-center gap-1.5 transition-all ${
+                          fulfillment === opt.value
+                            ? 'bg-[#E0A96D]/15 border-[#E0A96D]/50 text-[#F7D794]'
+                            : 'bg-white/[0.03] border-white/10 text-slate-400 hover:border-white/25'
+                        }`}
+                      >
+                        <opt.icon className="w-4 h-4" />
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {fulfillment === 'DELIVERY' && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-300 mb-1">
+                      Dirección de entrega *
+                    </label>
+                    <textarea
+                      rows={2}
+                      required
+                      placeholder="Calle, edificio, apartamento, ciudad..."
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      className="input-luxury text-sm resize-none"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-xs font-medium text-slate-300 mb-1">

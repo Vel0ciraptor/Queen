@@ -65,7 +65,8 @@ export const DashboardLayout: React.FC = () => {
   // Generate page title from route
   const path = location.pathname;
   let pageTitle = 'Panel General';
-  if (path.endsWith('/pos')) pageTitle = 'Punto de Venta (POS)';
+  if (path.endsWith('/sales')) pageTitle = 'Ventas';
+  else if (path.endsWith('/pos')) pageTitle = 'Punto de Venta (POS)';
   else if (path.endsWith('/inventory')) pageTitle = 'Inventario & Stock';
   else if (path.endsWith('/products')) pageTitle = 'Catálogo de Productos';
   else if (path.endsWith('/categories')) pageTitle = 'Categorías';
