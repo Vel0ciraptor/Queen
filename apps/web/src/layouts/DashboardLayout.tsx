@@ -3,6 +3,7 @@ import { Outlet, Navigate, useLocation } from 'react-router-dom';
 import { Sidebar } from '../components/Sidebar';
 import { useAuthStore } from '../store/authStore';
 import { Bell, AlertTriangle, Menu } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 import api from '../lib/api';
 
 export const DashboardLayout: React.FC = () => {
@@ -78,7 +79,7 @@ export const DashboardLayout: React.FC = () => {
   else if (path.endsWith('/dashboard')) pageTitle = 'Resumen General';
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-[#F8FAFC]">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-main)] transition-colors duration-200">
       {/* Mobile drawer backdrop */}
       {mobileNavOpen && (
         <div
@@ -98,34 +99,39 @@ export const DashboardLayout: React.FC = () => {
 
       <div className="flex-1 flex flex-col min-w-0 lg:pl-64 min-h-screen">
         {/* Top Bar */}
-        <header className="h-16 border-b border-[rgba(255,255,255,0.06)] bg-[#0E0E17]/80 backdrop-blur-xl px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30">
+        <header className="h-16 border-b border-[var(--border-subtle)] bg-[var(--surface)]/90 backdrop-blur-xl px-4 sm:px-8 flex items-center justify-between sticky top-0 z-30 shadow-sm transition-colors duration-200">
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setMobileNavOpen(true)}
-              className="lg:hidden p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-slate-300 hover:text-white transition-all"
+              className="lg:hidden p-2.5 rounded-xl bg-[var(--surface2)] border border-[var(--border-subtle)] text-[var(--text-main)] hover:border-[var(--pink-strong)] transition-all"
               aria-label="Abrir menú"
             >
               <Menu className="w-5 h-5" />
             </button>
             <div className="min-w-0">
-              <h2 className="text-sm sm:text-base font-serif font-bold text-white tracking-wide truncate">
+              <h2 className="text-sm sm:text-base font-serif font-bold text-[var(--text-main)] tracking-wide truncate">
                 {pageTitle}
               </h2>
-              <div className="text-[11px] text-slate-500 font-mono hidden sm:block">
+              <div className="text-[11px] text-[var(--text-dim)] font-mono hidden sm:block">
                 Queen Style ERP • Sistema Integrado
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 relative">
+          <div className="flex items-center gap-2.5 sm:gap-3 relative">
+            {/* Dark / Light Mode Toggle */}
+            <ThemeToggle variant="compact" />
+
             {/* Notifications Button */}
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 hover:text-white transition-all"
+              className="relative p-2 sm:p-2.5 rounded-xl bg-[var(--surface2)] hover:bg-[var(--surface)] border border-[var(--border-subtle)] text-[var(--text-main)] hover:border-[var(--pink-strong)] transition-all shadow-sm"
+              title="Notificaciones"
+              aria-label="Notificaciones"
             >
-              <Bell className="w-4 h-4" />
+              <Bell className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#E0A96D] text-[#12121C] text-[10px] font-bold flex items-center justify-center animate-pulse">
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--pink-strong)] text-white text-[10px] font-bold flex items-center justify-center animate-pulse shadow-sm">
                   {unreadCount}
                 </span>
               )}
@@ -133,15 +139,15 @@ export const DashboardLayout: React.FC = () => {
 
             {/* Notification Dropdown Panel */}
             {showNotifications && (
-              <div className="absolute right-0 top-12 w-80 bg-[#141422] border border-white/10 rounded-2xl shadow-2xl p-4 z-50 animate-slideUp">
-                <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
-                  <span className="text-xs font-bold text-white font-serif">
+              <div className="absolute right-0 top-12 w-80 bg-[var(--surface)] border border-[var(--border-subtle)] rounded-2xl shadow-2xl p-4 z-50 animate-slideUp">
+                <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] mb-3">
+                  <span className="text-xs font-bold text-[var(--text-main)] font-serif">
                     Notificaciones
                   </span>
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllRead}
-                      className="text-[10px] text-[#E0A96D] hover:underline"
+                      className="text-[10px] text-[var(--pink-strong)] font-semibold hover:underline"
                     >
                       Marcar todo leído
                     </button>

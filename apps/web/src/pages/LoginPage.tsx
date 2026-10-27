@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Crown, Lock, Mail, ArrowRight, ShieldCheck, UserCheck, AlertCircle } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { useAuthStore } from '../store/authStore';
 import api from '../lib/api';
 
@@ -78,33 +79,38 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg-primary)] flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-200">
+      {/* Top right theme toggle */}
+      <div className="absolute top-5 right-5 z-20">
+        <ThemeToggle variant="compact" />
+      </div>
+
       {/* Background ambient lighting */}
-      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-[#E0A96D]/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-[#FF6B81]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-1/4 -left-20 w-96 h-96 bg-[var(--pink-strong)]/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-[var(--gold)]/15 rounded-full blur-3xl pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10">
         {/* Logo and Brand */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-3 group mb-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#E0A96D] to-[#C48B4B] p-[1.5px] shadow-xl shadow-[#E0A96D]/20">
-              <div className="w-full h-full bg-[#12121C] rounded-[14px] flex items-center justify-center">
-                <Crown className="w-7 h-7 text-[#E0A96D]" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[var(--pink-strong)] via-[var(--pink-medium)] to-[var(--gold)] p-[1.5px] shadow-xl shadow-[var(--pink-strong)]/20">
+              <div className="w-full h-full bg-[var(--surface)] rounded-[14px] flex items-center justify-center">
+                <Crown className="w-7 h-7 text-[var(--pink-strong)]" />
               </div>
             </div>
           </Link>
-          <h1 className="font-serif text-3xl font-bold text-white tracking-wide">
-            Queen Style <span className="gold-text">ERP</span>
+          <h1 className="font-serif text-3xl font-bold text-[var(--text-main)] tracking-wide">
+            Queen Style <span className="text-[var(--pink-strong)]">ERP</span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1 uppercase tracking-widest font-mono">
+          <p className="text-xs text-[var(--text-secondary)] mt-1 uppercase tracking-widest font-mono font-semibold">
             Acceso a Personal & Administración
           </p>
         </div>
 
         {/* Login Glass Card */}
-        <div className="glass-card p-8 rounded-3xl border border-white/10 bg-[#12121C]/90 shadow-2xl space-y-6">
+        <div className="glass-card p-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--surface)]/95 shadow-2xl space-y-6">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+            <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-600 dark:text-rose-300 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>

@@ -13,6 +13,7 @@ import {
   Tag,
   FolderTree,
 } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 import { useAuthStore } from '../store/authStore';
 
 interface SidebarProps {
@@ -44,20 +45,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
   );
 
   return (
-    <aside className="w-64 h-screen bg-[#0E0E17] border-r border-[rgba(255,255,255,0.06)] flex flex-col justify-between overflow-y-auto">
+    <aside className="w-64 h-screen bg-[var(--surface)] border-r border-[var(--border-subtle)] flex flex-col justify-between overflow-y-auto transition-colors duration-200">
       <div>
         {/* Brand */}
-        <div className="p-6 border-b border-[rgba(255,255,255,0.06)] flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#E0A96D] to-[#C48B4B] p-[1.5px] shadow-lg shadow-[#E0A96D]/20">
-            <div className="w-full h-full bg-[#12121C] rounded-[10px] flex items-center justify-center">
-              <Crown className="w-5 h-5 text-[#E0A96D]" />
+        <div className="p-5 border-b border-[var(--border-subtle)] flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[var(--pink-strong)] via-[var(--pink-medium)] to-[var(--gold)] p-[1.5px] shadow-md shadow-[var(--pink-strong)]/20">
+            <div className="w-full h-full bg-[var(--surface)] rounded-[10px] flex items-center justify-center">
+              <Crown className="w-5 h-5 text-[var(--pink-strong)]" />
             </div>
           </div>
           <div>
-            <h1 className="font-serif font-bold text-white text-lg tracking-wider gold-text">
+            <h1 className="font-serif font-bold text-[var(--text-main)] text-lg tracking-wider">
               Queen Style
             </h1>
-            <span className="text-[10px] font-mono tracking-widest text-[#94A3B8] uppercase">
+            <span className="text-[10px] font-mono font-bold tracking-widest text-[var(--pink-strong)] uppercase">
               ERP Panel
             </span>
           </div>
@@ -69,13 +70,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
             to="/"
             target="_blank"
             onClick={onNavigate}
-            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/[0.04] transition-all mb-4 border border-dashed border-white/10"
+            className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--pink-strong)] hover:bg-[var(--surface2)] transition-all mb-4 border border-dashed border-[var(--border-subtle)] shadow-xs"
           >
-            <Store className="w-4 h-4 text-[#E0A96D]" />
+            <Store className="w-4 h-4 text-[var(--pink-strong)]" />
             <span>Ver Tienda Online ↗</span>
           </NavLink>
 
-          <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider px-3 pb-1">
+          <div className="text-[10px] uppercase font-extrabold text-[var(--text-dim)] tracking-wider px-3 pb-1">
             Módulos ERP
           </div>
 
@@ -87,10 +88,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
                 to={item.to}
                 onClick={onNavigate}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                  `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                     isActive
-                      ? 'bg-[#E0A96D]/15 text-[#F7D794] border border-[#E0A96D]/30 shadow-lg shadow-[#E0A96D]/10'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                      ? 'bg-[var(--pink-pastel)] text-[var(--magenta-deep)] border border-[var(--border)] shadow-sm dark:bg-[var(--pink-strong)]/20 dark:text-[var(--pink-strong)] dark:border-[var(--pink-strong)]/30'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-main)] hover:bg-[var(--surface2)]'
                   }`
                 }
               >
@@ -102,22 +103,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ onNavigate }) => {
         </nav>
       </div>
 
-      {/* User Profile Footer */}
-      <div className="p-4 border-t border-[rgba(255,255,255,0.06)] bg-black/20">
-        <div className="flex items-center justify-between">
+      {/* Footer with ThemeToggle & User Profile */}
+      <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--surface2)] space-y-3">
+        {/* Dark/Light mode switcher */}
+        <ThemeToggle variant="expanded" />
+
+        <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-full bg-[#E0A96D]/20 border border-[#E0A96D]/40 text-[#E0A96D] flex items-center justify-center font-bold text-xs uppercase shrink-0">
+            <div className="w-9 h-9 rounded-full bg-[var(--pink-pastel)] border border-[var(--pink-strong)]/40 text-[var(--magenta-deep)] dark:bg-[var(--pink-strong)]/20 dark:text-[var(--pink-strong)] flex items-center justify-center font-bold text-xs uppercase shrink-0 shadow-xs">
               {user?.name?.slice(0, 2) || 'QS'}
             </div>
             <div className="min-w-0">
-              <div className="text-xs font-semibold text-white truncate">{user?.name}</div>
-              <div className="text-[10px] font-mono text-[#E0A96D]">{user?.role}</div>
+              <div className="text-xs font-bold text-[var(--text-main)] truncate">{user?.name}</div>
+              <div className="text-[10px] font-mono font-semibold text-[var(--pink-strong)]">{user?.role}</div>
             </div>
           </div>
 
           <button
             onClick={handleLogout}
-            className="p-2 text-slate-500 hover:text-rose-400 rounded-lg transition-colors"
+            className="p-2 text-[var(--text-dim)] hover:text-rose-500 rounded-lg hover:bg-[var(--surface)] transition-all"
             title="Cerrar Sesión"
           >
             <LogOut className="w-4 h-4" />
