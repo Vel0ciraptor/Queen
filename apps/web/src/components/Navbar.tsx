@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Crown, LogIn, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
+import { ShoppingBag, LogIn, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
@@ -21,47 +21,41 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart }) => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-[var(--surface)]/95 border-b border-[var(--border-subtle)] backdrop-blur-xl shadow-xs transition-colors duration-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[var(--pink-strong)] via-[var(--pink-medium)] to-[var(--gold)] p-[1.5px] shadow-md shadow-[var(--pink-strong)]/20">
-            <div className="w-full h-full bg-[var(--surface)] rounded-[10px] flex items-center justify-center transition-all duration-300">
-              <Crown className="w-6 h-6 text-[var(--pink-strong)]" />
-            </div>
-          </div>
-          <div>
-            <span className="font-serif text-2xl font-bold tracking-wider text-[var(--text-main)] uppercase">
-              Queen Style
-            </span>
-            <span className="block text-[10px] tracking-[0.25em] text-[var(--pink-strong)] uppercase font-sans font-bold">
-              Haute Couture & ERP
-            </span>
-          </div>
+    <header className="sticky top-2.5 sm:top-4 z-50 px-3 sm:px-6 max-w-6xl mx-auto w-full transition-all duration-300">
+      {/* iPhone Glass Capsule Navbar */}
+      <div className="ios-capsule-navbar flex items-center justify-between px-4 sm:px-6 h-16 sm:h-18 rounded-full">
+        {/* Brand: QueenStyle + Tienda Online (Clean without crown for mobile perfection) */}
+        <Link to="/" className="flex flex-col group transition-transform duration-200 hover:scale-105">
+          <span className="font-serif text-xl sm:text-2xl font-black tracking-tight text-[var(--text-main)] leading-none">
+            Queen<span className="text-[var(--pink-strong)]">Style</span>
+          </span>
+          <span className="block text-[8.5px] sm:text-[9.5px] tracking-[0.25em] text-[var(--pink-strong)] uppercase font-sans font-extrabold mt-0.5">
+            Tienda Online
+          </span>
         </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6">
+        {/* Desktop Nav Controls */}
+        <nav className="hidden md:flex items-center gap-5">
           <Link
             to="/"
-            className="text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--pink-strong)] transition-colors"
+            className="text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--pink-strong)] transition-all duration-200 hover:scale-105 active:scale-95"
           >
             Colección & Catálogo
           </Link>
 
           {isAuthenticated ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <Link
                 to="/dashboard"
-                className="inline-flex items-center gap-2 text-sm font-bold text-[var(--magenta-deep)] bg-[var(--pink-pastel)] hover:bg-[var(--pink-medium)]/30 dark:text-[var(--pink-strong)] dark:bg-[var(--pink-strong)]/15 border border-[var(--border)] px-4 py-2 rounded-xl transition-all shadow-xs"
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--magenta-deep)] bg-[var(--pink-pastel)] hover:bg-[var(--pink-medium)]/30 dark:text-[var(--pink-strong)] dark:bg-[var(--pink-strong)]/20 border border-[var(--border)] px-3.5 py-2 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 shadow-xs"
               >
-                <LayoutDashboard className="w-4 h-4" />
-                Panel ERP ({user?.role})
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Panel ERP ({user?.role})</span>
               </Link>
 
               <button
                 onClick={handleLogout}
-                className="text-sm text-[var(--text-dim)] hover:text-rose-500 flex items-center gap-1 p-2 rounded-lg hover:bg-[var(--surface2)] transition-colors"
+                className="text-xs text-[var(--text-dim)] hover:text-rose-500 flex items-center gap-1 p-2 rounded-full hover:bg-[var(--surface2)] transition-all duration-200 hover:scale-110 active:scale-95"
                 title="Cerrar Sesión"
               >
                 <LogOut className="w-4 h-4" />
@@ -70,42 +64,46 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart }) => {
           ) : (
             <Link
               to="/login"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--pink-strong)] transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--pink-strong)] transition-all duration-200 hover:scale-105 active:scale-95"
             >
-              <LogIn className="w-4 h-4" />
-              Acceso Personal
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Acceso Personal</span>
             </Link>
           )}
 
-          {/* Theme Toggle */}
-          <ThemeToggle variant="compact" />
+          {/* Theme Toggle with iPhone touch-zoom */}
+          <div className="transition-transform duration-200 hover:scale-110 active:scale-95">
+            <ThemeToggle variant="compact" />
+          </div>
 
-          {/* Cart Bag Button */}
+          {/* Cart Bag Button — iOS Capsule Pill */}
           <button
             onClick={onOpenCart}
-            className="relative p-2.5 rounded-xl bg-[var(--surface2)] hover:bg-[var(--surface)] border border-[var(--border-subtle)] text-[var(--text-main)] transition-all flex items-center gap-2 shadow-xs"
+            className="relative px-3.5 py-2 rounded-full bg-gradient-to-r from-[var(--pink-strong)] to-[#e0007b] text-white transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg hover:scale-105 active:scale-95"
           >
-            <ShoppingBag className="w-5 h-5 text-[var(--pink-strong)]" />
-            <span className="text-sm font-bold hidden sm:inline">Bolsa</span>
+            <ShoppingBag className="w-4 h-4 text-white" />
+            <span className="text-xs font-extrabold hidden sm:inline">Bolsa</span>
             {itemCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[var(--pink-strong)] text-white text-xs font-bold flex items-center justify-center shadow-md animate-pulse">
+              <span className="w-4.5 h-4.5 rounded-full bg-white text-[var(--magenta-deep)] text-[10px] font-black flex items-center justify-center shadow-xs">
                 {itemCount}
               </span>
             )}
           </button>
         </nav>
 
-        {/* Mobile menu button */}
-        <div className="flex items-center gap-2.5 md:hidden">
-          <ThemeToggle variant="compact" />
+        {/* Mobile controls */}
+        <div className="flex items-center gap-2 md:hidden">
+          <div className="transition-transform duration-200 hover:scale-110 active:scale-95">
+            <ThemeToggle variant="compact" />
+          </div>
 
           <button
             onClick={onOpenCart}
-            className="relative p-2 rounded-xl bg-[var(--surface2)] border border-[var(--border-subtle)] text-[var(--pink-strong)] shadow-xs"
+            className="relative p-2.5 rounded-full bg-gradient-to-r from-[var(--pink-strong)] to-[#e0007b] text-white shadow-md active:scale-95 transition-transform"
           >
-            <ShoppingBag className="w-5 h-5" />
+            <ShoppingBag className="w-4 h-4 text-white" />
             {itemCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--pink-strong)] text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-white text-[var(--magenta-deep)] text-[10px] font-black flex items-center justify-center shadow-xs">
                 {itemCount}
               </span>
             )}
@@ -113,29 +111,30 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart }) => {
 
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-[var(--text-secondary)] hover:text-[var(--text-main)]"
+            className="p-2 rounded-full text-[var(--text-secondary)] hover:text-[var(--text-main)] active:scale-95 transition-transform"
+            aria-label="Abrir menú"
           >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
+      {/* Mobile Floating Glass Island Menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden px-4 pt-2 pb-6 border-t border-[var(--border-subtle)] bg-[var(--surface)]/98 backdrop-blur-2xl space-y-4 shadow-lg">
+        <div className="md:hidden mt-2 p-4 rounded-3xl border border-white/80 dark:border-white/15 bg-white/90 dark:bg-[#180d17]/95 backdrop-blur-3xl space-y-3 shadow-2xl animate-slideUp">
           <Link
             to="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="block text-base font-bold text-[var(--text-main)] hover:text-[var(--pink-strong)]"
+            className="block text-sm font-bold text-[var(--text-main)] hover:text-[var(--pink-strong)] px-3 py-2 rounded-2xl hover:bg-[var(--surface2)]"
           >
-            Catálogo Boutique
+            Catálogo & Tienda
           </Link>
           {isAuthenticated ? (
             <>
               <Link
                 to="/dashboard"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block text-base font-bold text-[var(--pink-strong)]"
+                className="block text-sm font-bold text-[var(--pink-strong)] px-3 py-2 rounded-2xl bg-[var(--pink-pastel)]/30 dark:bg-[var(--pink-strong)]/20"
               >
                 Panel ERP ({user?.role})
               </Link>
@@ -144,7 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart }) => {
                   handleLogout();
                   setMobileMenuOpen(false);
                 }}
-                className="text-left w-full text-base font-semibold text-rose-500"
+                className="text-left w-full text-sm font-semibold text-rose-500 px-3 py-2 rounded-2xl hover:bg-rose-500/10"
               >
                 Cerrar Sesión
               </button>
@@ -153,7 +152,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenCart }) => {
             <Link
               to="/login"
               onClick={() => setMobileMenuOpen(false)}
-              className="block text-base font-semibold text-[var(--text-secondary)]"
+              className="block text-sm font-semibold text-[var(--text-secondary)] px-3 py-2 rounded-2xl hover:bg-[var(--surface2)]"
             >
               Acceso Personal (Login)
             </Link>
