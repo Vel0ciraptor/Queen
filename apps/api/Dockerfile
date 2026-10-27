@@ -6,6 +6,12 @@
 # "Could not parse schema engine response" → el contenedor entra en crash-loop.
 FROM node:20-slim AS build
 WORKDIR /repo
+# openssl CLI ANTES de npm ci/prisma generate: Prisma detecta la versión de OpenSSL
+# con `openssl version`. Sin ese CLI en la build, descarga el engine 1.1.x mientras
+# runtime busca el 3.0.x → "loadLibrary" falla al arrancar NestJS.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
@@ -16,6 +22,8 @@ RUN npm ci
 COPY packages/shared packages/shared
 COPY apps/api apps/api
 RUN npx prisma generate --schema apps/api/prisma/schema.prisma
+# Guard: el engine del cliente debe existir antes de poder construir la imagen
+RUN ls node_modules/.prisma/client/*.so.node
 RUN npm run build --workspace=apps/api
 
 FROM node:20-slim AS runtime
