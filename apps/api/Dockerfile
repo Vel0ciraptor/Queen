@@ -48,10 +48,12 @@ COPY --from=build /repo/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /repo/node_modules/@prisma/client ./node_modules/@prisma/client
 COPY --from=build /repo/apps/api/dist ./apps/api/dist
 COPY apps/api/prisma ./apps/api/prisma
-COPY apps/api/package.json apps/api/nest-cli.json apps/api/tsconfig.build.json ./apps/api/
+# tsconfig.json DEBE ir a runtime: ts-node (seed) lo necesita para leer "module": "commonjs".
+# Sin él, ts-node defaulta module=NodeNext → TS5109 / carga .ts como ESM y el seed muere en silencio.
+COPY apps/api/package.json apps/api/nest-cli.json apps/api/tsconfig.build.json apps/api/tsconfig.json ./apps/api/
 
 WORKDIR /repo/apps/api
 RUN mkdir -p uploads/products
 
 EXPOSE 3000
-CMD ["sh", "-c", "set -e; npx prisma migrate deploy --schema prisma/schema.prisma; npx prisma db seed || echo '[seed] omitido'; exec node dist/main.js"]
+CMD ["sh", "-c", "set -e; npx prisma migrate deploy --schema prisma/schema.prisma; npx prisma db seed || echo '[seed] FALLO - la BD quedo sin usuarios iniciales (ver error arriba)'; exec node dist/main.js"]
