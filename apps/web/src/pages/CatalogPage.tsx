@@ -8,8 +8,6 @@ import {
   X,
   ShoppingBag,
   MessageCircle,
-  ShieldCheck,
-  Truck,
   SlidersHorizontal,
 } from 'lucide-react';
 import api from '../lib/api';
