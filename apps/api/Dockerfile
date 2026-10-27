@@ -1,9 +1,11 @@
 # Queen Style API — monorepo build (build context: repo root)
 # Build: docker build -f apps/api/Dockerfile .
 
-FROM node:20-alpine AS build
+# Node slim (Debian) en vez de Alpine: Prisma no detecta la versión de OpenSSL en
+# Alpine 3.19+ (solo trae OpenSSL 3) y su schema engine falla con
+# "Could not parse schema engine response" → el contenedor entra en crash-loop.
+FROM node:20-slim AS build
 WORKDIR /repo
-RUN apk add --no-cache libc6-compat
 
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
@@ -16,9 +18,12 @@ COPY apps/api apps/api
 RUN npx prisma generate --schema apps/api/prisma/schema.prisma
 RUN npm run build --workspace=apps/api
 
-FROM node:20-alpine AS runtime
+FROM node:20-slim AS runtime
 WORKDIR /repo
-RUN apk add --no-cache libc6-compat
+# openssl CLI: respaldo para que la detección de versión de Prisma nunca falle
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
 
 ENV NODE_ENV=production
 ENV PORT=3000
